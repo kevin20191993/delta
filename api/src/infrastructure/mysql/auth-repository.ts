@@ -17,6 +17,13 @@ export interface ResetTokenRecord {
   expiresAt: Date;
 }
 
+export interface CreateUserInput {
+  username: string;
+  email: string;
+  passwordHash: string;
+  role: string;
+}
+
 function createPool(): mysql.Pool {
   return mysql.createPool({
     host: process.env.AUTH_DB_HOST || '127.0.0.1',
@@ -113,6 +120,44 @@ export class MySqlAuthRepository {
         hashPassword(config.password)
       ]
     );
+  }
+
+  async listUsers(): Promise<Array<Omit<AuthUser, 'passwordHash'>>> {
+    const db = getPool();
+    const [rows] = await db.query<any[]>(
+      `
+        SELECT id, username, email, role, is_active
+        FROM cotizador_users
+        ORDER BY username ASC
+      `
+    );
+
+    return rows.map((row) => ({
+      id: Number(row.id),
+      username: String(row.username),
+      email: String(row.email),
+      role: String(row.role),
+      isActive: Boolean(row.is_active)
+    }));
+  }
+
+  async createUser(input: CreateUserInput): Promise<Omit<AuthUser, 'passwordHash'>> {
+    const db = getPool();
+    const [result] = await db.execute<mysql.ResultSetHeader>(
+      `
+        INSERT INTO cotizador_users (username, email, password_hash, role, is_active)
+        VALUES (?, ?, ?, ?, 1)
+      `,
+      [input.username.trim().toLowerCase(), input.email.trim().toLowerCase(), input.passwordHash, input.role]
+    );
+
+    return {
+      id: Number(result.insertId),
+      username: input.username.trim().toLowerCase(),
+      email: input.email.trim().toLowerCase(),
+      role: input.role,
+      isActive: true
+    };
   }
 
   async findByLogin(login: string): Promise<AuthUser | null> {

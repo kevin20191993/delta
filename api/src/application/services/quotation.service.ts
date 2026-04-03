@@ -1,6 +1,5 @@
-import { PostgresQuotationRepository, PostgresQuotationItemRepository, PostgresCompanySettingsRepository } from '../../infrastructure/database/repositories';
+import { PostgresQuotationRepository, PostgresQuotationItemRepository, PostgresCompanySettingsRepository, PostgresCustomerRepository } from '../../infrastructure/database/repositories';
 import { CreateQuotationDTO } from '../../common/validation';
-import { v4 as uuidv4 } from 'uuid';
 
 const DEFAULT_COMPANY_SETTINGS_ID = '00000000-0000-0000-0000-000000000001';
 
@@ -16,11 +15,38 @@ export class QuotationService {
   constructor(
     private quotationRepo: PostgresQuotationRepository,
     private itemRepo: PostgresQuotationItemRepository,
-    private settingsRepo: PostgresCompanySettingsRepository
+    private settingsRepo: PostgresCompanySettingsRepository,
+    private customerRepo: PostgresCustomerRepository
   ) {}
+
+  async getNextFolio(): Promise<string> {
+    const year = new Date().getFullYear();
+    const existing = await this.quotationRepo.findAll({ limit: 500, offset: 0 });
+    const maxSequence = existing
+      .map((quotation) => {
+        const match = quotation.folio.match(new RegExp(`^QT-${year}-(\\d+)$`));
+        return match ? Number(match[1]) : 0;
+      })
+      .reduce((max, current) => Math.max(max, current), 0);
+
+    return `QT-${year}-${String(maxSequence + 1).padStart(3, '0')}`;
+  }
 
   async create(companySettingsId: string, data: CreateQuotationDTO): Promise<any> {
     const resolvedCompanySettingsId = normalizeCompanySettingsId(companySettingsId);
+    const safeFolio = (await this.quotationRepo.findByFolio(data.folio))
+      ? await this.getNextFolio()
+      : data.folio;
+    const customer = await this.customerRepo.upsert({
+      companyName: data.destinationCompany,
+      contactName: data.customerAttention,
+      email: data.customerEmail || undefined,
+      phone: data.customerPhone || data.customerContact || undefined,
+      rfc: data.customerRfc || undefined,
+      address: data.customerAddress || undefined,
+      logoDataUrl: data.clientLogo || undefined,
+      updatedBy: 'api'
+    });
     const subtotal = data.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
     const discountAmount = subtotal * (data.discountPercent / 100);
     const taxable = Math.max(subtotal - discountAmount, 0);
@@ -28,8 +54,9 @@ export class QuotationService {
     const total = taxable + taxAmount;
 
     const quotation = await this.quotationRepo.create({
-      folio: data.folio,
+      folio: safeFolio,
       companySettingsId: resolvedCompanySettingsId,
+      customerId: customer.id,
       quotationDate: new Date(data.quotationDate),
       validityDays: data.validityDays,
       destinationCompany: data.destinationCompany,
@@ -65,7 +92,7 @@ export class QuotationService {
 
     const items = await this.itemRepo.findByQuotationId(quotation.id);
 
-    return { quotation, items };
+    return { quotation, items, customer };
   }
 
   async getById(id: string): Promise<any> {
@@ -75,7 +102,8 @@ export class QuotationService {
     }
 
     const items = await this.itemRepo.findByQuotationId(id);
-    return { quotation, items };
+    const customer = quotation.customerId ? await this.customerRepo.findByCompanyName(quotation.destinationCompany || '') : null;
+    return { quotation, items, customer };
   }
 
   async getByFolio(folio: string): Promise<any> {
@@ -171,6 +199,7 @@ export class CompanyService {
       phone: '+52 000 000 0000',
       email: 'info@kp-delta-ing-tech.mx',
       slogan: 'Soluciones de ingenieria y tecnologia',
+      logoDataUrl: '',
       primaryColor: '#08142b',
       accentColor: '#f97316',
       defaultConditions: '',
@@ -186,5 +215,13 @@ export class CompanyService {
     const resolvedId = normalizeCompanySettingsId(id);
     await this.getOrCreate(resolvedId);
     return this.settingsRepo.update(resolvedId, data, 'api');
+  }
+}
+
+export class CustomerService {
+  constructor(private customerRepo: PostgresCustomerRepository) {}
+
+  async list(limit = 100): Promise<any[]> {
+    return this.customerRepo.findAll(limit);
   }
 }

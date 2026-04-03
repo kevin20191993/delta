@@ -33,6 +33,26 @@ export interface QuotationResponse {
   };
 }
 
+export interface UserSummary {
+  id: number;
+  username: string;
+  email: string;
+  role: string;
+  isActive: boolean;
+}
+
+export interface CustomerRecord {
+  id: string;
+  name: string;
+  companyName?: string;
+  contactName?: string;
+  email?: string;
+  phone?: string;
+  rfc?: string;
+  address?: string;
+  logoDataUrl?: string;
+}
+
 interface RequestOptions extends RequestInit {
   requiresAuth?: boolean;
 }
@@ -60,7 +80,10 @@ async function request<T = any>(endpoint: string, options: RequestOptions = {}):
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-    throw new Error(error.error || `HTTP ${response.status}`);
+    const detailMessage = Array.isArray(error.details) && error.details.length
+      ? error.details.map((detail: any) => `${detail.path?.join?.('.') || 'campo'}: ${detail.message}`).join(', ')
+      : '';
+    throw new Error(detailMessage ? `${error.error}: ${detailMessage}` : (error.error || `HTTP ${response.status}`));
   }
 
   return response.json();
@@ -122,6 +145,10 @@ export class ApiClient {
     return this.fetch(`/api/quotations/folio/${folio}`, { method: 'GET' });
   }
 
+  static getNextFolio(): Promise<{ folio: string }> {
+    return this.fetch('/api/quotations/next-folio', { method: 'GET' });
+  }
+
   static listQuotations(filters?: { status?: string; limit?: number; offset?: number }) {
     const params = new URLSearchParams();
     if (filters?.status) params.append('status', filters.status);
@@ -152,5 +179,26 @@ export class ApiClient {
 
   static exportPdf(id: string) {
     return this.fetch(`/api/quotations/${id}/export-pdf`, { method: 'POST' });
+  }
+
+  static listCustomers(limit = 100): Promise<{ customers: CustomerRecord[] }> {
+    return this.fetch(`/api/customers?limit=${limit}`, { method: 'GET' });
+  }
+
+  static listUsers(): Promise<{ users: UserSummary[] }> {
+    return this.fetch('/api/users', { method: 'GET' });
+  }
+
+  static createUser(data: {
+    username: string;
+    email: string;
+    password: string;
+    confirmPassword: string;
+    role: string;
+  }): Promise<{ user: UserSummary }> {
+    return this.fetch('/api/users', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
   }
 }

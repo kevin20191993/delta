@@ -1,11 +1,12 @@
 import { getPool } from './connection';
-import { Quotation, QuotationItem, CompanySettings } from '../../domain/entities';
+import { Quotation, QuotationItem, CompanySettings, Customer } from '../../domain/entities';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface QuotationRepository {
   create(data: {
     folio: string;
     companySettingsId: string;
+    customerId?: string;
     quotationDate: Date;
     validityDays: number;
     destinationCompany: string;
@@ -50,11 +51,12 @@ export class PostgresQuotationRepository implements QuotationRepository {
     const query = `
       INSERT INTO quotations (
         id, folio, company_settings_id, quotation_date, validity_days,
+        customer_id,
         destination_company, customer_attention, customer_contact, project_location, currency,
         discount_percent, subtotal, tax_percent, tax_amount, total,
         conditions, hse_notes, legal_notes, observations, responsible_signature_name,
         status, created_at, updated_at, created_by, updated_by
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, NOW(), NOW(), $22, $22)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, NOW(), NOW(), $23, $23)
       RETURNING *
     `;
 
@@ -64,6 +66,7 @@ export class PostgresQuotationRepository implements QuotationRepository {
       data.companySettingsId,
       data.quotationDate,
       data.validityDays,
+      data.customerId || null,
       data.destinationCompany,
       data.customerAttention,
       data.customerContact,
@@ -357,9 +360,9 @@ export class PostgresCompanySettingsRepository {
     const query = `
       INSERT INTO company_settings (
         id, company_name, legal_name, rfc, address, phone, email, slogan,
-        primary_color, accent_color, default_conditions, default_notes, default_hse,
+        logo_data_url, primary_color, accent_color, default_conditions, default_notes, default_hse,
         technical_responsible_name, bank_details, tax_percent, created_at, updated_at, created_by, updated_by
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW(), NOW(), 'system', 'system')
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, NOW(), NOW(), 'system', 'system')
       RETURNING *
     `;
 
@@ -372,6 +375,7 @@ export class PostgresCompanySettingsRepository {
       defaultData.phone || '+1 000 0000',
       defaultData.email || 'info@empresa.mx',
       defaultData.slogan || 'Servicios profesionales',
+      defaultData.logoDataUrl || null,
       defaultData.primaryColor || '#08142b',
       defaultData.accentColor || '#f97316',
       defaultData.defaultConditions || '',
@@ -410,6 +414,84 @@ export class PostgresCompanySettingsRepository {
       paramIndex++;
     }
 
+    if (data.logoDataUrl !== undefined) {
+      updates.push(`logo_data_url = $${paramIndex}`);
+      values.push(data.logoDataUrl);
+      paramIndex++;
+    }
+
+    if (data.rfc !== undefined) {
+      updates.push(`rfc = $${paramIndex}`);
+      values.push(data.rfc);
+      paramIndex++;
+    }
+
+    if (data.address !== undefined) {
+      updates.push(`address = $${paramIndex}`);
+      values.push(data.address);
+      paramIndex++;
+    }
+
+    if (data.phone !== undefined) {
+      updates.push(`phone = $${paramIndex}`);
+      values.push(data.phone);
+      paramIndex++;
+    }
+
+    if (data.email !== undefined) {
+      updates.push(`email = $${paramIndex}`);
+      values.push(data.email);
+      paramIndex++;
+    }
+
+    if (data.slogan !== undefined) {
+      updates.push(`slogan = $${paramIndex}`);
+      values.push(data.slogan);
+      paramIndex++;
+    }
+
+    if (data.primaryColor !== undefined) {
+      updates.push(`primary_color = $${paramIndex}`);
+      values.push(data.primaryColor);
+      paramIndex++;
+    }
+
+    if (data.accentColor !== undefined) {
+      updates.push(`accent_color = $${paramIndex}`);
+      values.push(data.accentColor);
+      paramIndex++;
+    }
+
+    if (data.defaultConditions !== undefined) {
+      updates.push(`default_conditions = $${paramIndex}`);
+      values.push(data.defaultConditions);
+      paramIndex++;
+    }
+
+    if (data.defaultNotes !== undefined) {
+      updates.push(`default_notes = $${paramIndex}`);
+      values.push(data.defaultNotes);
+      paramIndex++;
+    }
+
+    if (data.defaultHse !== undefined) {
+      updates.push(`default_hse = $${paramIndex}`);
+      values.push(data.defaultHse);
+      paramIndex++;
+    }
+
+    if (data.technicalResponsibleName !== undefined) {
+      updates.push(`technical_responsible_name = $${paramIndex}`);
+      values.push(data.technicalResponsibleName);
+      paramIndex++;
+    }
+
+    if (data.bankDetails !== undefined) {
+      updates.push(`bank_details = $${paramIndex}`);
+      values.push(data.bankDetails);
+      paramIndex++;
+    }
+
     if (data.taxPercent !== undefined) {
       updates.push(`tax_percent = $${paramIndex}`);
       values.push(data.taxPercent);
@@ -444,6 +526,7 @@ export class PostgresCompanySettingsRepository {
       email: row.email,
       slogan: row.slogan,
       logoFileId: row.logo_file_id,
+      logoDataUrl: row.logo_data_url,
       primaryColor: row.primary_color,
       accentColor: row.accent_color,
       defaultConditions: row.default_conditions,
@@ -453,6 +536,115 @@ export class PostgresCompanySettingsRepository {
       technicalSignatureFileId: row.technical_signature_file_id,
       bankDetails: row.bank_details,
       taxPercent: row.tax_percent,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+      createdBy: row.created_by,
+      updatedBy: row.updated_by
+    };
+  }
+}
+
+export class PostgresCustomerRepository {
+  async findAll(limit = 100): Promise<Customer[]> {
+    const pool = getPool();
+    const result = await pool.query(
+      `SELECT * FROM customers ORDER BY updated_at DESC NULLS LAST, company_name ASC LIMIT $1`,
+      [limit]
+    );
+    return result.rows.map((row) => this.rowToEntity(row));
+  }
+
+  async findByCompanyName(companyName: string): Promise<Customer | null> {
+    const pool = getPool();
+    const normalized = companyName.trim().toLowerCase();
+    const result = await pool.query(
+      `SELECT * FROM customers WHERE LOWER(COALESCE(company_name, name)) = $1 LIMIT 1`,
+      [normalized]
+    );
+    return result.rows.length ? this.rowToEntity(result.rows[0]) : null;
+  }
+
+  async upsert(data: {
+    companyName: string;
+    contactName?: string;
+    email?: string;
+    phone?: string;
+    rfc?: string;
+    address?: string;
+    logoDataUrl?: string;
+    updatedBy?: string;
+  }): Promise<Customer> {
+    const existing = await this.findByCompanyName(data.companyName);
+    const pool = getPool();
+
+    if (existing) {
+      const result = await pool.query(
+        `
+          UPDATE customers
+          SET
+            name = $2,
+            company_name = $2,
+            contact_name = $3,
+            email = $4,
+            phone = $5,
+            rfc = $6,
+            address = $7,
+            logo_data_url = COALESCE($8, logo_data_url),
+            updated_at = NOW(),
+            updated_by = $9
+          WHERE id = $1
+          RETURNING *
+        `,
+        [
+          existing.id,
+          data.companyName,
+          data.contactName || null,
+          data.email || null,
+          data.phone || null,
+          data.rfc || null,
+          data.address || null,
+          data.logoDataUrl || null,
+          data.updatedBy || 'system'
+        ]
+      );
+
+      return this.rowToEntity(result.rows[0]);
+    }
+
+    const result = await pool.query(
+      `
+        INSERT INTO customers (
+          id, name, company_name, contact_name, email, phone, rfc, address, logo_data_url, created_at, updated_at, created_by, updated_by
+        ) VALUES ($1, $2, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW(), $9, $9)
+        RETURNING *
+      `,
+      [
+        uuidv4(),
+        data.companyName,
+        data.contactName || null,
+        data.email || null,
+        data.phone || null,
+        data.rfc || null,
+        data.address || null,
+        data.logoDataUrl || null,
+        data.updatedBy || 'system'
+      ]
+    );
+
+    return this.rowToEntity(result.rows[0]);
+  }
+
+  private rowToEntity(row: any): Customer {
+    return {
+      id: row.id,
+      name: row.name,
+      companyName: row.company_name,
+      contactName: row.contact_name,
+      email: row.email,
+      phone: row.phone,
+      rfc: row.rfc,
+      address: row.address,
+      logoDataUrl: row.logo_data_url,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       createdBy: row.created_by,

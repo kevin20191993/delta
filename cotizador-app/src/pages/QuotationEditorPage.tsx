@@ -1,12 +1,12 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ItemsTable from '../components/ItemsTable';
 import QuotationForm from '../components/QuotationForm';
 import QuotationPreview from '../components/QuotationPreview';
 import { createDefaultQuotation, defaultCompanySettings } from '../data/defaults';
 import { padItemId, readImageAsDataUrl } from '../lib/format';
+import { ApiClient, CustomerRecord } from '../lib/api';
 import { CompanySettings, QuotationDraft, QuotationItem } from '../types/quotation';
-import { ApiClient } from '../lib/api';
 
 const COMPANY_STORAGE_KEY = 'kp-cotizador-company-v1';
 const QUOTATION_STORAGE_KEY = 'kp-cotizador-draft-v1';
@@ -22,65 +22,167 @@ function loadFromStorage<T>(key: string, fallback: T): T {
   }
 }
 
+function normalizeCompanyData(raw: Partial<CompanySettings>): CompanySettings {
+  return {
+    ...defaultCompanySettings,
+    ...raw,
+    taxPercent: Number(raw.taxPercent ?? defaultCompanySettings.taxPercent)
+  };
+}
+
+function normalizeDateInput(value: string): string {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const parsed = new Date(value);
+  if (!Number.isNaN(parsed.getTime())) return parsed.toISOString().slice(0, 10);
+  return new Date().toISOString().slice(0, 10);
+}
+
 function reorder<T>(list: T[], index: number, direction: 'up' | 'down'): T[] {
   const target = direction === 'up' ? index - 1 : index + 1;
   if (target < 0 || target >= list.length) return list;
   const copy = [...list];
-  const current = copy[index];
-  copy[index] = copy[target];
-  copy[target] = current;
+  [copy[index], copy[target]] = [copy[target], copy[index]];
   return copy;
 }
 
-function generateFolio(): string {
-  const year = new Date().getFullYear();
-  const sequenceKey = `kp-cotizador-seq-${year}`;
-  const next = Number(localStorage.getItem(sequenceKey) ?? '0') + 1;
-  localStorage.setItem(sequenceKey, String(next));
-  return `QT-${year}-${String(next).padStart(3, '0')}`;
+function mapApiQuotationToDraft(data: any): QuotationDraft {
+  return {
+    folio: data.quotation.folio,
+    date: String(data.quotation.quotationDate || data.quotation.quotation_date || '').slice(0, 10),
+    validityDays: Number(data.quotation.validityDays ?? data.quotation.validity_days ?? 15),
+    discountPercent: Number(data.quotation.discountPercent ?? data.quotation.discount_percent ?? 0),
+    customerName: data.quotation.customerAttention ?? data.quotation.customer_attention ?? '',
+    customerContact: data.quotation.customerContact ?? data.quotation.customer_contact ?? '',
+    customerEmail: data.customer?.email ?? '',
+    customerPhone: data.customer?.phone ?? '',
+    customerRfc: data.customer?.rfc ?? '',
+    customerAddress: data.customer?.address ?? '',
+    destinationCompany: data.quotation.destinationCompany ?? data.quotation.destination_company ?? '',
+    projectLocation: data.quotation.projectLocation ?? data.quotation.project_location ?? '',
+    currency: data.quotation.currency ?? 'MXN',
+    observations: data.quotation.observations ?? '',
+    conditions: data.quotation.conditions ?? '',
+    hseNotes: data.quotation.hseNotes ?? data.quotation.hse_notes ?? '',
+    legalNotes: data.quotation.legalNotes ?? data.quotation.legal_notes ?? '',
+    responsibleSignature: data.quotation.responsibleSignatureName ?? data.quotation.responsible_signature_name ?? '',
+    clientLogo: data.customer?.logoDataUrl,
+    status: data.quotation.status ?? 'draft',
+    items: (data.items ?? []).map((item: any, index: number) => ({
+      id: item.itemCode ?? item.item_code ?? padItemId(index),
+      description: item.description,
+      quantity: Number(item.quantity),
+      unit: item.unit,
+      unitPrice: Number(item.unitPrice ?? item.unit_price)
+    }))
+  };
 }
 
 export default function QuotationEditorPage() {
   const navigate = useNavigate();
   const [company, setCompany] = useState<CompanySettings>(() =>
-    loadFromStorage(COMPANY_STORAGE_KEY, defaultCompanySettings)
+    normalizeCompanyData(loadFromStorage(COMPANY_STORAGE_KEY, defaultCompanySettings))
   );
   const [quotation, setQuotation] = useState<QuotationDraft>(() =>
     loadFromStorage(QUOTATION_STORAGE_KEY, createDefaultQuotation())
   );
-  const [error, setError] = useState<string>('');
+  const [customers, setCustomers] = useState<CustomerRecord[]>([]);
+  const [error, setError] = useState('');
   const [quotationId, setQuotationId] = useState<string>(() => localStorage.getItem(QUOTATION_ID_KEY) || '');
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
 
-  // Load company settings from API on mount
   useEffect(() => {
-    const loadCompany = async () => {
+    const loadInitialData = async () => {
       try {
-        const data = await ApiClient.getCompany();
-        if (data) {
-          setCompany((prev) => ({ ...prev, ...data }));
-          localStorage.setItem(COMPANY_STORAGE_KEY, JSON.stringify({ ...company, ...data }));
-        }
+        const [companyResponse, customerResponse] = await Promise.all([
+          ApiClient.getCompany(),
+          ApiClient.listCustomers()
+        ]);
+
+        const normalizedCompany = normalizeCompanyData({
+          ...companyResponse,
+          technicalLeadName: companyResponse.technicalResponsibleName ?? companyResponse.technicalLeadName,
+          companyLogo: companyResponse.logoDataUrl ?? companyResponse.companyLogo
+        });
+
+        setCompany(normalizedCompany);
+        localStorage.setItem(COMPANY_STORAGE_KEY, JSON.stringify(normalizedCompany));
+        setCustomers(customerResponse.customers ?? []);
       } catch (err) {
-        console.warn('Could not load company settings from API:', err);
+        console.warn('No fue posible cargar datos iniciales del cotizador:', err);
       }
     };
-    loadCompany();
+
+    void loadInitialData();
   }, []);
+
+  useEffect(() => {
+    const loadQuotation = async () => {
+      if (!quotationId) {
+        try {
+          const next = await ApiClient.getNextFolio();
+          setQuotation((prev) => {
+            const updated = { ...prev, folio: next.folio };
+            localStorage.setItem(QUOTATION_STORAGE_KEY, JSON.stringify(updated));
+            return updated;
+          });
+        } catch {
+          // keep local fallback
+        }
+        return;
+      }
+
+      try {
+        const data = await ApiClient.getQuotation(quotationId);
+        const mapped = mapApiQuotationToDraft(data);
+        setQuotation(mapped);
+        localStorage.setItem(QUOTATION_STORAGE_KEY, JSON.stringify(mapped));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'No se pudo cargar la cotización');
+      }
+    };
+
+    void loadQuotation();
+  }, [quotationId]);
+
+  useEffect(() => {
+    const matched = customers.find(
+      (customer) => (customer.companyName || customer.name || '').toLowerCase() === quotation.destinationCompany.trim().toLowerCase()
+    );
+
+    if (!matched) return;
+
+    setQuotation((prev) => {
+      const updated: QuotationDraft = {
+        ...prev,
+        customerName: prev.customerName || matched.contactName || prev.customerName,
+        customerEmail: prev.customerEmail || matched.email || '',
+        customerPhone: prev.customerPhone || matched.phone || '',
+        customerRfc: prev.customerRfc || matched.rfc || '',
+        customerAddress: prev.customerAddress || matched.address || '',
+        clientLogo: prev.clientLogo || matched.logoDataUrl
+      };
+      localStorage.setItem(QUOTATION_STORAGE_KEY, JSON.stringify(updated));
+      return updated;
+    });
+  }, [quotation.destinationCompany, customers]);
 
   const totals = useMemo(() => {
     const subtotal = quotation.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
     const discountAmount = subtotal * (quotation.discountPercent / 100);
     const taxable = Math.max(subtotal - discountAmount, 0);
-    const taxAmount = taxable * (company.taxPercent / 100);
-    const total = taxable + taxAmount;
-    return { subtotal, discountAmount, taxAmount, total };
+    const taxAmount = taxable * (Number(company.taxPercent) / 100);
+    return {
+      subtotal,
+      discountAmount,
+      taxAmount,
+      total: taxable + taxAmount
+    };
   }, [quotation.items, quotation.discountPercent, company.taxPercent]);
 
   const setCompanyField = <K extends keyof CompanySettings>(key: K, value: CompanySettings[K]) => {
-    const updated = { ...company, [key]: value };
+    const updated = normalizeCompanyData({ ...company, [key]: value });
     setCompany(updated);
     localStorage.setItem(COMPANY_STORAGE_KEY, JSON.stringify(updated));
   };
@@ -98,41 +200,41 @@ export default function QuotationEditorPage() {
   };
 
   const handleUploadCompanyLogo = async (file?: File) => {
-    setError('');
     if (!file) return;
     try {
       const image = await readImageAsDataUrl(file);
       setCompanyField('companyLogo', image);
-    } catch (uploadError) {
-      setError(uploadError instanceof Error ? uploadError.message : 'No se pudo cargar el logo.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo cargar el logo de empresa');
     }
   };
 
   const handleUploadClientLogo = async (file?: File) => {
-    setError('');
     if (!file) return;
     try {
       const image = await readImageAsDataUrl(file);
       setQuotationField('clientLogo', image);
-    } catch (uploadError) {
-      setError(uploadError instanceof Error ? uploadError.message : 'No se pudo cargar el logo de cliente.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo cargar el logo del cliente');
     }
   };
 
   const addItem = () => {
-    const next: QuotationItem = {
-      id: padItemId(quotation.items.length),
-      description: 'Nuevo concepto tecnico',
-      quantity: 1,
-      unit: 'SERV',
-      unitPrice: 0
-    };
-    setItems([...quotation.items, next]);
+    setItems([
+      ...quotation.items,
+      {
+        id: padItemId(quotation.items.length),
+        description: 'Nuevo concepto tecnico',
+        quantity: 1,
+        unit: 'SERV',
+        unitPrice: 0
+      }
+    ]);
   };
 
   const removeItem = (index: number) => {
     const next = quotation.items.filter((_, itemIndex) => itemIndex !== index);
-    setItems(next.length > 0 ? next : quotation.items);
+    setItems(next.length ? next : quotation.items);
   };
 
   const moveItem = (index: number, direction: 'up' | 'down') => {
@@ -141,34 +243,55 @@ export default function QuotationEditorPage() {
 
   const updateItem = <K extends keyof QuotationItem>(index: number, key: K, value: QuotationItem[K]) => {
     const normalizedValue =
-      key === 'quantity'
-        ? (Math.max(Number(value), 0.01) as QuotationItem[K])
-        : key === 'unitPrice'
-          ? (Math.max(Number(value), 0) as QuotationItem[K])
-          : value;
+      key === 'quantity' ? (Math.max(Number(value), 0.01) as QuotationItem[K]) :
+      key === 'unitPrice' ? (Math.max(Number(value), 0) as QuotationItem[K]) :
+      value;
 
-    const updated = quotation.items.map((item, itemIndex) => {
-      if (itemIndex !== index) return item;
-      return { ...item, [key]: normalizedValue };
-    });
-    setItems(updated);
+    setItems(
+      quotation.items.map((item, itemIndex) => (itemIndex === index ? { ...item, [key]: normalizedValue } : item))
+    );
   };
 
   const saveToBackend = async () => {
     setIsSaving(true);
     setError('');
+
     try {
+      await ApiClient.updateCompany({
+        companyName: company.companyName,
+        legalName: company.legalName,
+        rfc: company.rfc,
+        address: company.address,
+        phone: company.phone,
+        email: company.email,
+        slogan: company.slogan,
+        logoDataUrl: company.companyLogo || '',
+        primaryColor: company.primaryColor,
+        accentColor: company.accentColor,
+        defaultConditions: quotation.conditions || company.defaultConditions,
+        defaultNotes: quotation.legalNotes || company.defaultNotes,
+        defaultHse: quotation.hseNotes || company.defaultHse,
+        technicalResponsibleName: company.technicalLeadName,
+        bankDetails: company.bankDetails || '',
+        taxPercent: Number(company.taxPercent)
+      });
+
       const payload = {
         folio: quotation.folio,
-        quotationDate: quotation.date,
-        validityDays: quotation.validityDays,
+        quotationDate: normalizeDateInput(quotation.date),
+        validityDays: Number(quotation.validityDays),
         destinationCompany: quotation.destinationCompany,
         customerAttention: quotation.customerName,
         customerContact: quotation.customerContact,
+        customerEmail: quotation.customerEmail,
+        customerPhone: quotation.customerPhone,
+        customerRfc: quotation.customerRfc,
+        customerAddress: quotation.customerAddress,
+        clientLogo: quotation.clientLogo || '',
         projectLocation: quotation.projectLocation,
         currency: quotation.currency,
-        discountPercent: quotation.discountPercent,
-        taxPercent: company.taxPercent,
+        discountPercent: Number(quotation.discountPercent),
+        taxPercent: Number(company.taxPercent),
         conditions: quotation.conditions,
         hseNotes: quotation.hseNotes,
         legalNotes: quotation.legalNotes,
@@ -177,23 +300,28 @@ export default function QuotationEditorPage() {
         items: quotation.items.map((item) => ({
           itemCode: item.id,
           description: item.description,
-          quantity: item.quantity,
+          quantity: Number(item.quantity),
           unit: item.unit,
-          unitPrice: item.unitPrice
+          unitPrice: Number(item.unitPrice)
         }))
       };
 
       if (quotationId) {
-        console.log('Update not yet implemented');
+        setError('La edición remota completa aún no está habilitada. Ya quedó lista la persistencia; el siguiente paso es habilitar update.');
       } else {
         const result = await ApiClient.createQuotation(payload);
+        const savedQuotation = { ...quotation, folio: result.quotation.folio };
+        setQuotation(savedQuotation);
         setQuotationId(result.quotation.id);
         localStorage.setItem(QUOTATION_ID_KEY, result.quotation.id);
+        localStorage.setItem(QUOTATION_STORAGE_KEY, JSON.stringify(savedQuotation));
+        const customerResponse = await ApiClient.listCustomers();
+        setCustomers(customerResponse.customers ?? []);
       }
 
       setLastSaved(new Date());
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error saving to backend');
+      setError(err instanceof Error ? err.message : 'No se pudo guardar la cotización');
     } finally {
       setIsSaving(false);
     }
@@ -204,6 +332,7 @@ export default function QuotationEditorPage() {
       setError('Guarda la cotización antes de exportar PDF.');
       return;
     }
+
     setIsExportingPdf(true);
     setError('');
     try {
@@ -227,15 +356,22 @@ export default function QuotationEditorPage() {
     }
   };
 
-  const resetQuotation = () => {
+  const resetQuotation = async () => {
     const next = {
       ...createDefaultQuotation(),
-      folio: generateFolio(),
       responsibleSignature: company.technicalLeadName,
       conditions: company.defaultConditions,
       hseNotes: company.defaultHse,
       legalNotes: company.defaultNotes
     };
+
+    try {
+      const folioResponse = await ApiClient.getNextFolio();
+      next.folio = folioResponse.folio;
+    } catch {
+      // keep fallback
+    }
+
     setQuotation(next);
     setQuotationId('');
     localStorage.removeItem(QUOTATION_ID_KEY);
@@ -255,11 +391,18 @@ export default function QuotationEditorPage() {
               >
                 ← Todas las cotizaciones
               </button>
-              <h1 className="font-display text-3xl text-ink mt-0.5">
+              <h1 className="mt-0.5 font-display text-3xl text-ink">
                 {quotationId ? `Cotización ${quotation.folio}` : 'Nueva cotización'}
               </h1>
             </div>
             <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => navigate('/cotizador/users')}
+                className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-ink transition hover:bg-slate-50"
+              >
+                Usuarios
+              </button>
               <button
                 type="button"
                 onClick={saveToBackend}
@@ -270,7 +413,7 @@ export default function QuotationEditorPage() {
               </button>
               <button
                 type="button"
-                onClick={resetQuotation}
+                onClick={() => void resetQuotation()}
                 className="rounded-lg bg-ink px-4 py-2 text-sm font-semibold text-white transition hover:bg-steel"
               >
                 + Nueva
@@ -299,6 +442,7 @@ export default function QuotationEditorPage() {
             <QuotationForm
               company={company}
               quotation={quotation}
+              customers={customers}
               onCompanyField={setCompanyField}
               onQuotationField={setQuotationField}
               onUploadCompanyLogo={handleUploadCompanyLogo}

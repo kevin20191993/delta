@@ -54,6 +54,7 @@ export interface CompanySettings {
   email: string;
   slogan: string;
   logoFileId?: string;
+  logoDataUrl?: string;
   primaryColor: string;
   accentColor: string;
   defaultConditions?: string;
@@ -88,6 +89,9 @@ export interface Customer {
   contactName?: string;
   email?: string;
   phone?: string;
+  rfc?: string;
+  address?: string;
+  logoDataUrl?: string;
   createdAt: Date;
   updatedAt: Date;
   createdBy?: string;

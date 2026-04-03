@@ -14,7 +14,13 @@ function requireAuth(req, res, next) {
     const token = authHeader.slice(7);
     try {
         const secret = process.env.JWT_SECRET || 'changeme-set-jwt-secret-in-env';
-        jsonwebtoken_1.default.verify(token, secret);
+        const decoded = jsonwebtoken_1.default.verify(token, secret);
+        req.authUser = {
+            id: decoded.sub || '',
+            username: decoded.username || '',
+            email: decoded.email || '',
+            role: decoded.role || 'admin'
+        };
         next();
     }
     catch {

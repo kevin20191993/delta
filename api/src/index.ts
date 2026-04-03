@@ -7,6 +7,7 @@ import { createAuthRoutes } from './presentation/auth-routes';
 import { initDb } from './infrastructure/database/connection';
 import { PdfService } from './infrastructure/pdf/pdf.service';
 import { MySqlAuthRepository } from './infrastructure/mysql/auth-repository';
+import { ensureExtendedQuotationSchema } from './infrastructure/database/schema';
 
 async function bootstrap(): Promise<Express> {
   const app = express();
@@ -26,6 +27,8 @@ async function bootstrap(): Promise<Express> {
     password: decodeURIComponent(databaseUrl?.password || process.env.DB_PASSWORD || 'postgres'),
     database: databaseUrl?.pathname.replace(/^\//, '') || process.env.DB_NAME || 'quotations'
   });
+
+  await ensureExtendedQuotationSchema();
 
   await authRepo.ensureSchema();
   await authRepo.ensureDefaultAdminUser({

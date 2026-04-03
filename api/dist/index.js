@@ -12,6 +12,7 @@ const auth_routes_1 = require("./presentation/auth-routes");
 const connection_1 = require("./infrastructure/database/connection");
 const pdf_service_1 = require("./infrastructure/pdf/pdf.service");
 const auth_repository_1 = require("./infrastructure/mysql/auth-repository");
+const schema_1 = require("./infrastructure/database/schema");
 async function bootstrap() {
     const app = (0, express_1.default)();
     const databaseUrl = process.env.DATABASE_URL ? new URL(process.env.DATABASE_URL) : null;
@@ -28,6 +29,7 @@ async function bootstrap() {
         password: decodeURIComponent(databaseUrl?.password || process.env.DB_PASSWORD || 'postgres'),
         database: databaseUrl?.pathname.replace(/^\//, '') || process.env.DB_NAME || 'quotations'
     });
+    await (0, schema_1.ensureExtendedQuotationSchema)();
     await authRepo.ensureSchema();
     await authRepo.ensureDefaultAdminUser({
         username: process.env.ADMIN_USER || 'admin',

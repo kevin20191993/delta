@@ -17,7 +17,8 @@ function createPdfRoutes() {
     const quotationRepo = new repositories_1.PostgresQuotationRepository();
     const itemRepo = new repositories_1.PostgresQuotationItemRepository();
     const settingsRepo = new repositories_1.PostgresCompanySettingsRepository();
-    const quotationService = new quotation_service_1.QuotationService(quotationRepo, itemRepo, settingsRepo);
+    const customerRepo = new repositories_1.PostgresCustomerRepository();
+    const quotationService = new quotation_service_1.QuotationService(quotationRepo, itemRepo, settingsRepo, customerRepo);
     const pdfService = new pdf_service_1.PdfService();
     router.post('/api/quotations/:id/export-pdf', auth_1.requireAuth, async (req, res) => {
         try {

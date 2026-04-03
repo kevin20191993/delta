@@ -36,6 +36,10 @@ export interface QuotationDraft {
   discountPercent: number;
   customerName: string;
   customerContact: string;
+  customerEmail: string;
+  customerPhone: string;
+  customerRfc: string;
+  customerAddress: string;
   destinationCompany: string;
   projectLocation: string;
   currency: CurrencyCode;
@@ -47,4 +51,16 @@ export interface QuotationDraft {
   clientLogo?: string;
   status: QuotationStatus;
   items: QuotationItem[];
+}
+
+export interface CustomerRecord {
+  id: string;
+  name: string;
+  companyName?: string;
+  contactName?: string;
+  email?: string;
+  phone?: string;
+  rfc?: string;
+  address?: string;
+  logoDataUrl?: string;
 }

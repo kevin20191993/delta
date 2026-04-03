@@ -5,7 +5,8 @@ import { PdfService } from '../infrastructure/pdf/pdf.service';
 import {
   PostgresQuotationRepository,
   PostgresQuotationItemRepository,
-  PostgresCompanySettingsRepository
+  PostgresCompanySettingsRepository,
+  PostgresCustomerRepository
 } from '../infrastructure/database/repositories';
 import path from 'path';
 import { requireAuth } from '../middleware/auth';
@@ -20,8 +21,9 @@ export function createPdfRoutes(): Router {
   const quotationRepo = new PostgresQuotationRepository();
   const itemRepo = new PostgresQuotationItemRepository();
   const settingsRepo = new PostgresCompanySettingsRepository();
+  const customerRepo = new PostgresCustomerRepository();
 
-  const quotationService = new QuotationService(quotationRepo, itemRepo, settingsRepo);
+  const quotationService = new QuotationService(quotationRepo, itemRepo, settingsRepo, customerRepo);
   const pdfService = new PdfService();
 
   router.post('/api/quotations/:id/export-pdf', requireAuth, async (req: Request, res: Response) => {

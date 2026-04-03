@@ -158,6 +158,13 @@ export default function QuotationsListPage() {
             <div className="flex items-center gap-2">
               <button
                 type="button"
+                onClick={() => navigate('/cotizador/users')}
+                className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-ink transition hover:bg-slate-50"
+              >
+                Usuarios
+              </button>
+              <button
+                type="button"
                 onClick={handleNewQuotation}
                 className="rounded-lg bg-ember px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-600"
               >

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CompanyService = exports.QuotationService = void 0;
+exports.CustomerService = exports.CompanyService = exports.QuotationService = void 0;
 const DEFAULT_COMPANY_SETTINGS_ID = '00000000-0000-0000-0000-000000000001';
 function normalizeCompanySettingsId(value) {
     if (!value || value === 'default') {
@@ -9,21 +9,47 @@ function normalizeCompanySettingsId(value) {
     return value;
 }
 class QuotationService {
-    constructor(quotationRepo, itemRepo, settingsRepo) {
+    constructor(quotationRepo, itemRepo, settingsRepo, customerRepo) {
         this.quotationRepo = quotationRepo;
         this.itemRepo = itemRepo;
         this.settingsRepo = settingsRepo;
+        this.customerRepo = customerRepo;
+    }
+    async getNextFolio() {
+        const year = new Date().getFullYear();
+        const existing = await this.quotationRepo.findAll({ limit: 500, offset: 0 });
+        const maxSequence = existing
+            .map((quotation) => {
+            const match = quotation.folio.match(new RegExp(`^QT-${year}-(\\d+)$`));
+            return match ? Number(match[1]) : 0;
+        })
+            .reduce((max, current) => Math.max(max, current), 0);
+        return `QT-${year}-${String(maxSequence + 1).padStart(3, '0')}`;
     }
     async create(companySettingsId, data) {
         const resolvedCompanySettingsId = normalizeCompanySettingsId(companySettingsId);
+        const safeFolio = (await this.quotationRepo.findByFolio(data.folio))
+            ? await this.getNextFolio()
+            : data.folio;
+        const customer = await this.customerRepo.upsert({
+            companyName: data.destinationCompany,
+            contactName: data.customerAttention,
+            email: data.customerEmail || undefined,
+            phone: data.customerPhone || data.customerContact || undefined,
+            rfc: data.customerRfc || undefined,
+            address: data.customerAddress || undefined,
+            logoDataUrl: data.clientLogo || undefined,
+            updatedBy: 'api'
+        });
         const subtotal = data.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
         const discountAmount = subtotal * (data.discountPercent / 100);
         const taxable = Math.max(subtotal - discountAmount, 0);
         const taxAmount = taxable * (data.taxPercent / 100);
         const total = taxable + taxAmount;
         const quotation = await this.quotationRepo.create({
-            folio: data.folio,
+            folio: safeFolio,
             companySettingsId: resolvedCompanySettingsId,
+            customerId: customer.id,
             quotationDate: new Date(data.quotationDate),
             validityDays: data.validityDays,
             destinationCompany: data.destinationCompany,
@@ -52,7 +78,7 @@ class QuotationService {
             unitPrice: item.unitPrice
         })), 'api');
         const items = await this.itemRepo.findByQuotationId(quotation.id);
-        return { quotation, items };
+        return { quotation, items, customer };
     }
     async getById(id) {
         const quotation = await this.quotationRepo.findById(id);
@@ -60,7 +86,8 @@ class QuotationService {
             throw new Error(`Quotation ${id} not found`);
         }
         const items = await this.itemRepo.findByQuotationId(id);
-        return { quotation, items };
+        const customer = quotation.customerId ? await this.customerRepo.findByCompanyName(quotation.destinationCompany || '') : null;
+        return { quotation, items, customer };
     }
     async getByFolio(folio) {
         const quotation = await this.quotationRepo.findByFolio(folio);
@@ -136,6 +163,7 @@ class CompanyService {
             phone: '+52 000 000 0000',
             email: 'info@kp-delta-ing-tech.mx',
             slogan: 'Soluciones de ingenieria y tecnologia',
+            logoDataUrl: '',
             primaryColor: '#08142b',
             accentColor: '#f97316',
             defaultConditions: '',
@@ -153,4 +181,13 @@ class CompanyService {
     }
 }
 exports.CompanyService = CompanyService;
+class CustomerService {
+    constructor(customerRepo) {
+        this.customerRepo = customerRepo;
+    }
+    async list(limit = 100) {
+        return this.customerRepo.findAll(limit);
+    }
+}
+exports.CustomerService = CustomerService;
 //# sourceMappingURL=quotation.service.js.map

@@ -5,6 +5,7 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import QuotationsListPage from './pages/QuotationsListPage';
 import QuotationEditorPage from './pages/QuotationEditorPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import UsersPage from './pages/UsersPage';
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   if (!isAuthenticated()) {
@@ -33,6 +34,14 @@ export default function App() {
           element={
             <RequireAuth>
               <QuotationEditorPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/cotizador/users"
+          element={
+            <RequireAuth>
+              <UsersPage />
             </RequireAuth>
           }
         />
