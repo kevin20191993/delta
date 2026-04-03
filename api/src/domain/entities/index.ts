@@ -20,6 +20,12 @@ export interface Quotation {
   legalNotes?: string;
   observations?: string;
   responsibleSignatureName?: string;
+  showConditions?: boolean;
+  showHse?: boolean;
+  showLegalNotes?: boolean;
+  showResponsibleSignature?: boolean;
+  showCustomerAcceptance?: boolean;
+  showClientLogo?: boolean;
   clientLogoFileId?: string;
   status: 'draft' | 'sent' | 'approved' | 'rejected';
   createdAt: Date;

@@ -14,8 +14,9 @@ class PostgresQuotationRepository {
         destination_company, customer_attention, customer_contact, project_location, currency,
         discount_percent, subtotal, tax_percent, tax_amount, total,
         conditions, hse_notes, legal_notes, observations, responsible_signature_name,
+        show_conditions, show_hse, show_legal_notes, show_responsible_signature, show_customer_acceptance, show_client_logo,
         status, created_at, updated_at, created_by, updated_by
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, NOW(), NOW(), $23, $23)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, NOW(), NOW(), $29, $29)
       RETURNING *
     `;
         const values = [
@@ -40,6 +41,12 @@ class PostgresQuotationRepository {
             data.legalNotes,
             data.observations,
             data.responsibleSignatureName,
+            data.showConditions ?? true,
+            data.showHse ?? true,
+            data.showLegalNotes ?? true,
+            data.showResponsibleSignature ?? true,
+            data.showCustomerAcceptance ?? true,
+            data.showClientLogo ?? true,
             data.status || 'draft',
             data.createdBy || 'system'
         ];
@@ -94,6 +101,56 @@ class PostgresQuotationRepository {
         const updates = [];
         const values = [];
         let paramIndex = 1;
+        if (data.folio !== undefined) {
+            updates.push(`folio = $${paramIndex}`);
+            values.push(data.folio);
+            paramIndex++;
+        }
+        if (data.companySettingsId !== undefined) {
+            updates.push(`company_settings_id = $${paramIndex}`);
+            values.push(data.companySettingsId);
+            paramIndex++;
+        }
+        if (data.customerId !== undefined) {
+            updates.push(`customer_id = $${paramIndex}`);
+            values.push(data.customerId);
+            paramIndex++;
+        }
+        if (data.quotationDate !== undefined) {
+            updates.push(`quotation_date = $${paramIndex}`);
+            values.push(data.quotationDate);
+            paramIndex++;
+        }
+        if (data.validityDays !== undefined) {
+            updates.push(`validity_days = $${paramIndex}`);
+            values.push(data.validityDays);
+            paramIndex++;
+        }
+        if (data.destinationCompany !== undefined) {
+            updates.push(`destination_company = $${paramIndex}`);
+            values.push(data.destinationCompany);
+            paramIndex++;
+        }
+        if (data.customerAttention !== undefined) {
+            updates.push(`customer_attention = $${paramIndex}`);
+            values.push(data.customerAttention);
+            paramIndex++;
+        }
+        if (data.customerContact !== undefined) {
+            updates.push(`customer_contact = $${paramIndex}`);
+            values.push(data.customerContact);
+            paramIndex++;
+        }
+        if (data.projectLocation !== undefined) {
+            updates.push(`project_location = $${paramIndex}`);
+            values.push(data.projectLocation);
+            paramIndex++;
+        }
+        if (data.currency !== undefined) {
+            updates.push(`currency = $${paramIndex}`);
+            values.push(data.currency);
+            paramIndex++;
+        }
         if (data.status !== undefined) {
             updates.push(`status = $${paramIndex}`);
             values.push(data.status);
@@ -104,19 +161,85 @@ class PostgresQuotationRepository {
             values.push(data.discountPercent);
             paramIndex++;
         }
+        if (data.subtotal !== undefined) {
+            updates.push(`subtotal = $${paramIndex}`);
+            values.push(data.subtotal);
+            paramIndex++;
+        }
+        if (data.taxPercent !== undefined) {
+            updates.push(`tax_percent = $${paramIndex}`);
+            values.push(data.taxPercent);
+            paramIndex++;
+        }
+        if (data.taxAmount !== undefined) {
+            updates.push(`tax_amount = $${paramIndex}`);
+            values.push(data.taxAmount);
+            paramIndex++;
+        }
         if (data.total !== undefined) {
             updates.push(`total = $${paramIndex}`);
             values.push(data.total);
             paramIndex++;
         }
-        updates.push('updated_at = NOW()');
-        if (updatedBy) {
-            updates.push(`updated_by = $${paramIndex}`);
-            values.push(updatedBy);
+        if (data.conditions !== undefined) {
+            updates.push(`conditions = $${paramIndex}`);
+            values.push(data.conditions);
             paramIndex++;
         }
-        updates.push(`updated_by = COALESCE(updated_by, $${paramIndex})`);
+        if (data.hseNotes !== undefined) {
+            updates.push(`hse_notes = $${paramIndex}`);
+            values.push(data.hseNotes);
+            paramIndex++;
+        }
+        if (data.legalNotes !== undefined) {
+            updates.push(`legal_notes = $${paramIndex}`);
+            values.push(data.legalNotes);
+            paramIndex++;
+        }
+        if (data.observations !== undefined) {
+            updates.push(`observations = $${paramIndex}`);
+            values.push(data.observations);
+            paramIndex++;
+        }
+        if (data.responsibleSignatureName !== undefined) {
+            updates.push(`responsible_signature_name = $${paramIndex}`);
+            values.push(data.responsibleSignatureName);
+            paramIndex++;
+        }
+        if (data.showConditions !== undefined) {
+            updates.push(`show_conditions = $${paramIndex}`);
+            values.push(data.showConditions);
+            paramIndex++;
+        }
+        if (data.showHse !== undefined) {
+            updates.push(`show_hse = $${paramIndex}`);
+            values.push(data.showHse);
+            paramIndex++;
+        }
+        if (data.showLegalNotes !== undefined) {
+            updates.push(`show_legal_notes = $${paramIndex}`);
+            values.push(data.showLegalNotes);
+            paramIndex++;
+        }
+        if (data.showResponsibleSignature !== undefined) {
+            updates.push(`show_responsible_signature = $${paramIndex}`);
+            values.push(data.showResponsibleSignature);
+            paramIndex++;
+        }
+        if (data.showCustomerAcceptance !== undefined) {
+            updates.push(`show_customer_acceptance = $${paramIndex}`);
+            values.push(data.showCustomerAcceptance);
+            paramIndex++;
+        }
+        if (data.showClientLogo !== undefined) {
+            updates.push(`show_client_logo = $${paramIndex}`);
+            values.push(data.showClientLogo);
+            paramIndex++;
+        }
+        updates.push('updated_at = NOW()');
+        updates.push(`updated_by = $${paramIndex}`);
         values.push(updatedBy || 'system');
+        paramIndex++;
         values.push(id);
         const query = `UPDATE quotations SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING *`;
         const result = await pool.query(query, values);
@@ -173,6 +296,12 @@ class PostgresQuotationRepository {
             legalNotes: row.legal_notes,
             observations: row.observations,
             responsibleSignatureName: row.responsible_signature_name,
+            showConditions: row.show_conditions,
+            showHse: row.show_hse,
+            showLegalNotes: row.show_legal_notes,
+            showResponsibleSignature: row.show_responsible_signature,
+            showCustomerAcceptance: row.show_customer_acceptance,
+            showClientLogo: row.show_client_logo,
             clientLogoFileId: row.client_logo_file_id,
             status: row.status,
             createdAt: row.created_at,

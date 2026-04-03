@@ -67,6 +67,12 @@ class QuotationService {
             legalNotes: data.legalNotes,
             observations: data.observations,
             responsibleSignatureName: data.responsibleSignatureName,
+            showConditions: data.showConditions,
+            showHse: data.showHse,
+            showLegalNotes: data.showLegalNotes,
+            showResponsibleSignature: data.showResponsibleSignature,
+            showCustomerAcceptance: data.showCustomerAcceptance,
+            showClientLogo: data.showClientLogo,
             status: 'draft',
             createdBy: 'api'
         });
@@ -109,6 +115,70 @@ class QuotationService {
     async updateStatus(id, status, note) {
         await this.quotationRepo.updateStatus(id, status, note, 'api');
     }
+    async update(id, companySettingsId, data) {
+        const resolvedCompanySettingsId = normalizeCompanySettingsId(companySettingsId);
+        const existing = await this.quotationRepo.findById(id);
+        if (!existing) {
+            throw new Error(`Quotation ${id} not found`);
+        }
+        const conflicting = await this.quotationRepo.findByFolio(data.folio);
+        const safeFolio = conflicting && conflicting.id !== id
+            ? await this.getNextFolio()
+            : data.folio;
+        const customer = await this.customerRepo.upsert({
+            companyName: data.destinationCompany,
+            contactName: data.customerAttention,
+            email: data.customerEmail || undefined,
+            phone: data.customerPhone || data.customerContact || undefined,
+            rfc: data.customerRfc || undefined,
+            address: data.customerAddress || undefined,
+            logoDataUrl: data.clientLogo || undefined,
+            updatedBy: 'api'
+        });
+        const subtotal = data.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+        const discountAmount = subtotal * (data.discountPercent / 100);
+        const taxable = Math.max(subtotal - discountAmount, 0);
+        const taxAmount = taxable * (data.taxPercent / 100);
+        const total = taxable + taxAmount;
+        const quotation = await this.quotationRepo.update(id, {
+            folio: safeFolio,
+            companySettingsId: resolvedCompanySettingsId,
+            customerId: customer.id,
+            quotationDate: new Date(data.quotationDate),
+            validityDays: data.validityDays,
+            destinationCompany: data.destinationCompany,
+            customerAttention: data.customerAttention,
+            customerContact: data.customerContact,
+            projectLocation: data.projectLocation,
+            currency: data.currency,
+            discountPercent: data.discountPercent,
+            subtotal,
+            taxPercent: data.taxPercent,
+            taxAmount,
+            total,
+            conditions: data.conditions,
+            hseNotes: data.hseNotes,
+            legalNotes: data.legalNotes,
+            observations: data.observations,
+            responsibleSignatureName: data.responsibleSignatureName,
+            showConditions: data.showConditions,
+            showHse: data.showHse,
+            showLegalNotes: data.showLegalNotes,
+            showResponsibleSignature: data.showResponsibleSignature,
+            showCustomerAcceptance: data.showCustomerAcceptance,
+            showClientLogo: data.showClientLogo
+        }, 'api');
+        await this.itemRepo.deleteByQuotationId(id);
+        await this.itemRepo.createBatch(id, data.items.map((item) => ({
+            itemCode: item.itemCode,
+            description: item.description,
+            quantity: item.quantity,
+            unit: item.unit,
+            unitPrice: item.unitPrice
+        })), 'api');
+        const items = await this.itemRepo.findByQuotationId(id);
+        return { quotation, items, customer };
+    }
     async duplicate(id, newFolio) {
         const original = await this.getById(id);
         const newQuotation = await this.quotationRepo.create({
@@ -131,6 +201,12 @@ class QuotationService {
             legalNotes: original.quotation.legalNotes,
             observations: original.quotation.observations,
             responsibleSignatureName: original.quotation.responsibleSignatureName,
+            showConditions: original.quotation.showConditions,
+            showHse: original.quotation.showHse,
+            showLegalNotes: original.quotation.showLegalNotes,
+            showResponsibleSignature: original.quotation.showResponsibleSignature,
+            showCustomerAcceptance: original.quotation.showCustomerAcceptance,
+            showClientLogo: original.quotation.showClientLogo,
             status: 'draft',
             createdBy: 'api'
         });

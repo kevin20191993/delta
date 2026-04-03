@@ -65,6 +65,12 @@ function mapApiQuotationToDraft(data: any): QuotationDraft {
     hseNotes: data.quotation.hseNotes ?? data.quotation.hse_notes ?? '',
     legalNotes: data.quotation.legalNotes ?? data.quotation.legal_notes ?? '',
     responsibleSignature: data.quotation.responsibleSignatureName ?? data.quotation.responsible_signature_name ?? '',
+    showConditions: data.quotation.showConditions ?? data.quotation.show_conditions ?? true,
+    showHse: data.quotation.showHse ?? data.quotation.show_hse ?? true,
+    showLegalNotes: data.quotation.showLegalNotes ?? data.quotation.show_legal_notes ?? true,
+    showResponsibleSignature: data.quotation.showResponsibleSignature ?? data.quotation.show_responsible_signature ?? true,
+    showCustomerAcceptance: data.quotation.showCustomerAcceptance ?? data.quotation.show_customer_acceptance ?? true,
+    showClientLogo: data.quotation.showClientLogo ?? data.quotation.show_client_logo ?? true,
     clientLogo: data.customer?.logoDataUrl,
     status: data.quotation.status ?? 'draft',
     items: (data.items ?? []).map((item: any, index: number) => ({
@@ -297,6 +303,12 @@ export default function QuotationEditorPage() {
         legalNotes: quotation.legalNotes,
         observations: quotation.observations,
         responsibleSignatureName: quotation.responsibleSignature,
+        showConditions: quotation.showConditions,
+        showHse: quotation.showHse,
+        showLegalNotes: quotation.showLegalNotes,
+        showResponsibleSignature: quotation.showResponsibleSignature,
+        showCustomerAcceptance: quotation.showCustomerAcceptance,
+        showClientLogo: quotation.showClientLogo,
         items: quotation.items.map((item) => ({
           itemCode: item.id,
           description: item.description,
@@ -307,7 +319,12 @@ export default function QuotationEditorPage() {
       };
 
       if (quotationId) {
-        setError('La edición remota completa aún no está habilitada. Ya quedó lista la persistencia; el siguiente paso es habilitar update.');
+        const result = await ApiClient.updateQuotation(quotationId, payload);
+        const savedQuotation = { ...quotation, folio: result.quotation.folio };
+        setQuotation(savedQuotation);
+        localStorage.setItem(QUOTATION_STORAGE_KEY, JSON.stringify(savedQuotation));
+        const customerResponse = await ApiClient.listCustomers();
+        setCustomers(customerResponse.customers ?? []);
       } else {
         const result = await ApiClient.createQuotation(payload);
         const savedQuotation = { ...quotation, folio: result.quotation.folio };

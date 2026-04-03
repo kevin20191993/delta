@@ -137,6 +137,10 @@ export class ApiClient {
     return this.fetch('/api/quotations', { method: 'POST', body: JSON.stringify(data) });
   }
 
+  static updateQuotation(id: string, data: any): Promise<QuotationResponse> {
+    return this.fetch(`/api/quotations/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+  }
+
   static getQuotation(id: string) {
     return this.fetch(`/api/quotations/${id}`, { method: 'GET' });
   }

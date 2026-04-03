@@ -8,12 +8,12 @@ interface QuotationSummary {
   id: string;
   folio: string;
   status: QuotationStatus;
-  destination_company: string;
-  customer_attention: string;
-  quotation_date: string;
+  destinationCompany: string;
+  customerAttention: string;
+  quotationDate: string;
   currency: string;
-  total_amount?: number;
-  created_at: string;
+  total?: number;
+  createdAt: string;
 }
 
 const STATUS_LABELS: Record<QuotationStatus, string> = {
@@ -63,7 +63,18 @@ export default function QuotationsListPage() {
         status: filterStatus || undefined,
         limit: 100
       });
-      setQuotations(result.quotations ?? []);
+      const normalized = (Array.isArray(result) ? result : result.quotations ?? []).map((entry: any) => ({
+        id: entry.quotation?.id ?? entry.id,
+        folio: entry.quotation?.folio ?? entry.folio,
+        status: entry.quotation?.status ?? entry.status,
+        destinationCompany: entry.quotation?.destinationCompany ?? entry.destinationCompany ?? entry.destination_company ?? '',
+        customerAttention: entry.quotation?.customerAttention ?? entry.customerAttention ?? entry.customer_attention ?? '',
+        quotationDate: entry.quotation?.quotationDate ?? entry.quotationDate ?? entry.quotation_date ?? '',
+        currency: entry.quotation?.currency ?? entry.currency ?? 'MXN',
+        total: Number(entry.quotation?.total ?? entry.total ?? entry.total_amount ?? 0),
+        createdAt: entry.quotation?.createdAt ?? entry.createdAt ?? entry.created_at ?? ''
+      }));
+      setQuotations(normalized);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error cargando cotizaciones');
     } finally {
@@ -258,13 +269,13 @@ export default function QuotationsListPage() {
                         {q.folio}
                       </td>
                       <td className="px-4 py-3">
-                        <p className="font-medium text-ink">{q.destination_company || '—'}</p>
-                        {q.customer_attention && (
-                          <p className="text-xs text-slate-400">Att: {q.customer_attention}</p>
+                        <p className="font-medium text-ink">{q.destinationCompany || '—'}</p>
+                        {q.customerAttention && (
+                          <p className="text-xs text-slate-400">Att: {q.customerAttention}</p>
                         )}
                       </td>
                       <td className="px-4 py-3 text-slate-500">
-                        {formatDate(q.quotation_date)}
+                        {formatDate(q.quotationDate)}
                       </td>
                       <td className="px-4 py-3">
                         <select
@@ -280,7 +291,7 @@ export default function QuotationsListPage() {
                         </select>
                       </td>
                       <td className="px-4 py-3 text-right font-medium text-ink">
-                        {formatCurrency(q.total_amount, q.currency)}
+                        {formatCurrency(q.total, q.currency)}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-center gap-1">

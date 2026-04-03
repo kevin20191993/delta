@@ -44,6 +44,27 @@ export class QuotationController {
     }
   }
 
+  async update(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const companySettingsId = req.headers['x-company-id'] as string || 'default';
+      const validated = CreateQuotationValidation.parse(req.body);
+
+      const result = await this.quotationService.update(id, companySettingsId, validated);
+      res.json(result);
+    } catch (err) {
+      if (err instanceof ZodError) {
+        res.status(400).json({ error: 'Validation error', details: err.errors });
+      } else if (err instanceof Error && err.message.includes('not found')) {
+        res.status(404).json({ error: err.message });
+      } else if (err instanceof Error) {
+        res.status(500).json({ error: err.message });
+      } else {
+        res.status(500).json({ error: 'Unknown error' });
+      }
+    }
+  }
+
   async getByFolio(req: Request, res: Response): Promise<void> {
     try {
       const { folio } = req.params;

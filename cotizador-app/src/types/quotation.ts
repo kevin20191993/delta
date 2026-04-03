@@ -48,6 +48,12 @@ export interface QuotationDraft {
   hseNotes: string;
   legalNotes: string;
   responsibleSignature: string;
+  showConditions: boolean;
+  showHse: boolean;
+  showLegalNotes: boolean;
+  showResponsibleSignature: boolean;
+  showCustomerAcceptance: boolean;
+  showClientLogo: boolean;
   clientLogo?: string;
   status: QuotationStatus;
   items: QuotationItem[];

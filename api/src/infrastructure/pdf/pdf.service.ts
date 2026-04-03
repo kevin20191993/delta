@@ -47,6 +47,19 @@ export class PdfService {
 
   private renderHtml(data: PdfGenerationData): string {
     const { quotation, items, company, clientLogo } = data;
+    const textBlocks = [
+      quotation.showConditions !== false ? { key: 'conditions', title: 'Condiciones', body: quotation.conditions || '-' } : null,
+      quotation.showHse !== false ? { key: 'hse', title: 'HSE / Seguridad', body: quotation.hseNotes || '-' } : null,
+      quotation.showLegalNotes !== false ? { key: 'notes', title: 'Notas y validez', body: `${quotation.legalNotes || '-'} | Validez: ${quotation.validityDays} dias.` } : null
+    ].filter(Boolean) as Array<{ key: string; title: string; body: string }>;
+    const activeSignatures = [
+      quotation.showResponsibleSignature !== false
+        ? { key: 'responsible', title: quotation.responsibleSignatureName || 'Responsable Tecnico', subtitle: 'Responsable Tecnico' }
+        : null,
+      quotation.showCustomerAcceptance !== false
+        ? { key: 'customer', title: 'Aceptacion Cliente', subtitle: 'Firma y Sello' }
+        : null
+    ].filter(Boolean) as Array<{ key: string; title: string; subtitle: string }>;
 
     const subtotal = items.reduce((sum: number, item: any) => sum + item.quantity * item.unitPrice, 0);
     const discountAmount = subtotal * (quotation.discountPercent / 100);
@@ -79,6 +92,35 @@ export class PdfService {
       )
       .join('');
 
+    const textBlocksHtml = textBlocks
+      .map(
+        (block) => `
+        <div class="condition-box ${block.key === 'notes' ? 'condition-box-wide' : ''}">
+          <label class="label">${block.title}</label>
+          <p>${block.body}</p>
+        </div>
+      `
+      )
+      .join('');
+
+    const signaturesHtml = activeSignatures.length
+      ? `
+      <div class="signatures ${activeSignatures.length === 1 ? 'signatures-single' : ''}">
+        ${activeSignatures
+          .map(
+            (signature) => `
+            <div class="signature">
+              <div class="sig-line"></div>
+              <div class="sig-label">${signature.title}</div>
+              <div class="sig-subtitle">${signature.subtitle}</div>
+            </div>
+          `
+          )
+          .join('')}
+      </div>
+    `
+      : '';
+
     return `
 <!DOCTYPE html>
 <html lang="es-MX">
@@ -89,7 +131,7 @@ export class PdfService {
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Archivo', Arial, sans-serif; line-height: 1.5; color: #333; }
-    .page { max-width: 210mm; height: 297mm; margin: 0 auto; padding: 10mm; background: white; }
+    .page { width: 190mm; margin: 0 auto; padding: 10mm 0; background: white; }
     
     header { display: grid; grid-template-columns: 1fr auto; gap: 20px; margin-bottom: 30px; border-bottom: 3px solid #08142b; padding-bottom: 20px; }
     .company-info { display: flex; gap: 15px; }
@@ -120,11 +162,12 @@ export class PdfService {
     tbody td { padding: 8px; border-bottom: 1px solid #e5e7eb; font-size: 10px; }
     tbody tr:nth-child(even) { background: #f9fafb; }
     
-    .summary { display: grid; grid-template-columns: 1fr 280px; gap: 20px; margin-bottom: 20px; }
-    .conditions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .condition-box { background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; }
+    .summary { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 20px; margin-bottom: 20px; align-items: start; }
+    .conditions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; }
+    .condition-box { background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; min-height: 98px; }
+    .condition-box-wide { grid-column: 1 / -1; }
     .condition-box .label { font-size: 9px; font-weight: bold; text-transform: uppercase; color: #08142b; letter-spacing: 0.5px; margin-bottom: 8px; display: block; }
-    .condition-box p { font-size: 10px; color: #666; line-height: 1.4; }
+    .condition-box p { font-size: 10px; color: #666; line-height: 1.5; white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere; }
     
     .totals-box { background: #08142b; color: white; border-radius: 16px; padding: 20px; }
     .total-row { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 8px; }
@@ -136,10 +179,12 @@ export class PdfService {
     .total-final .label { font-size: 10px; text-transform: uppercase; color: #f97316; font-weight: bold; letter-spacing: 0.5px; display: block; margin-bottom: 6px; }
     .total-final .amount { font-size: 42px; font-weight: bold; line-height: 1; }
     
-    .signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 40px; }
-    .signature { text-align: center; }
+    .signatures { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px; margin-top: 34px; }
+    .signatures-single { grid-template-columns: 1fr; justify-items: center; }
+    .signature { text-align: center; width: 100%; max-width: 250px; justify-self: center; }
     .sig-line { border-top: 1px solid #333; width: 140px; margin: 0 auto 6px; }
     .sig-label { font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
+    .sig-subtitle { font-size: 9px; color: #999; margin-top: 4px; }
     
     .footer-note { font-size: 9px; color: #999; margin-top: 20px; text-align: center; line-height: 1.4; }
   </style>
@@ -148,7 +193,7 @@ export class PdfService {
   <div class="page">
     <header>
       <div class="company-info">
-        <div class="logo">${company.logoFileId ? `<img src="${company.logoFileId}" alt="Logo">` : company.companyName.charAt(0).toUpperCase()}</div>
+        <div class="logo">${company.logoDataUrl || company.logoFileId ? `<img src="${company.logoDataUrl || company.logoFileId}" alt="Logo">` : company.companyName.charAt(0).toUpperCase()}</div>
         <div class="company-details">
           <h1>${company.companyName}</h1>
           <div class="slogan">${company.slogan}</div>
@@ -174,7 +219,9 @@ export class PdfService {
       <div class="block">
         <div class="label">Proyecto / ubicacion</div>
         <div class="title">${quotation.projectLocation}</div>
-        ${clientLogo ? `<img src="${clientLogo}" alt="Logo Cliente" class="client-logo">` : '<div class="detail" style="margin-top: 12px;">Sin logo de cliente</div>'}
+        ${quotation.showClientLogo !== false
+          ? (clientLogo ? `<img src="${clientLogo}" alt="Logo Cliente" class="client-logo">` : '<div class="detail" style="margin-top: 12px;">Sin logo de cliente</div>')
+          : '<div class="detail" style="margin-top: 12px;">Logo del cliente oculto</div>'}
       </div>
     </div>
 
@@ -196,18 +243,7 @@ export class PdfService {
 
     <div class="summary">
       <div class="conditions">
-        <div class="condition-box">
-          <label class="label">Condiciones</label>
-          <p>${quotation.conditions || '-'}</p>
-        </div>
-        <div class="condition-box">
-          <label class="label">HSE / Seguridad</label>
-          <p>${quotation.hseNotes || '-'}</p>
-        </div>
-        <div class="condition-box" style="grid-column: 1 / -1;">
-          <label class="label">Notas y validez</label>
-          <p>${quotation.legalNotes || '-'} | Validez: ${quotation.validityDays} dias.</p>
-        </div>
+        ${textBlocksHtml}
       </div>
 
       <div class="totals-box">
@@ -231,18 +267,7 @@ export class PdfService {
       </div>
     </div>
 
-    <div class="signatures">
-      <div class="signature">
-        <div class="sig-line"></div>
-        <div class="sig-label">${quotation.responsibleSignatureName || 'Responsable Tecnico'}</div>
-        <div style="font-size: 9px; color: #999; margin-top: 4px;">Responsable Tecnico</div>
-      </div>
-      <div class="signature">
-        <div class="sig-line"></div>
-        <div class="sig-label">Aceptacion Cliente</div>
-        <div style="font-size: 9px; color: #999; margin-top: 4px;">Firma y Sello</div>
-      </div>
-    </div>
+    ${signaturesHtml}
 
     <div class="footer-note">
       Propuesta valida por ${quotation.validityDays} dias naturales | Generado automaticamente

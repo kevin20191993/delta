@@ -27,6 +27,7 @@ function createRoutes() {
     router.get('/api/quotations/next-folio', auth_1.requireAuth, (req, res) => quotationController.nextFolio(req, res));
     router.get('/api/quotations/folio/:folio', auth_1.requireAuth, (req, res) => quotationController.getByFolio(req, res));
     router.get('/api/quotations/:id', auth_1.requireAuth, (req, res) => quotationController.getById(req, res));
+    router.put('/api/quotations/:id', auth_1.requireAuth, (req, res) => quotationController.update(req, res));
     router.patch('/api/quotations/:id/status', auth_1.requireAuth, (req, res) => quotationController.updateStatus(req, res));
     router.post('/api/quotations/:id/duplicate', auth_1.requireAuth, (req, res) => quotationController.duplicate(req, res));
     router.delete('/api/quotations/:id', auth_1.requireAuth, (req, res) => quotationController.delete(req, res));

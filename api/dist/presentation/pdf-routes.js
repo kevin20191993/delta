@@ -48,12 +48,13 @@ function createPdfRoutes() {
                 quotation: quotationData.quotation,
                 items: quotationData.items,
                 company,
-                clientLogo: quotationData.quotation.clientLogoFileId
+                clientLogo: quotationData.customer?.logoDataUrl || quotationData.quotation.clientLogoFileId
             }, outputPath);
             res.download(outputPath, `${quotationData.quotation.folio}.pdf`);
         }
         catch (err) {
-            res.status(500).json({ error: 'Error generating PDF' });
+            console.error('PDF export error:', err);
+            res.status(500).json({ error: err instanceof Error ? err.message : 'Error generating PDF' });
         }
     });
     return router;

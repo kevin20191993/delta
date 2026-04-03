@@ -23,6 +23,12 @@ exports.CreateQuotationValidation = zod_1.z.object({
     legalNotes: zod_1.z.string().max(300).optional(),
     observations: zod_1.z.string().optional(),
     responsibleSignatureName: zod_1.z.string().max(120).optional(),
+    showConditions: zod_1.z.coerce.boolean().optional().default(true),
+    showHse: zod_1.z.coerce.boolean().optional().default(true),
+    showLegalNotes: zod_1.z.coerce.boolean().optional().default(true),
+    showResponsibleSignature: zod_1.z.coerce.boolean().optional().default(true),
+    showCustomerAcceptance: zod_1.z.coerce.boolean().optional().default(true),
+    showClientLogo: zod_1.z.coerce.boolean().optional().default(true),
     items: zod_1.z.array(zod_1.z.object({
         itemCode: zod_1.z.string().min(1).max(30),
         description: zod_1.z.string().min(1).max(300),

@@ -21,6 +21,12 @@ export const CreateQuotationValidation = z.object({
   legalNotes: z.string().max(300).optional(),
   observations: z.string().optional(),
   responsibleSignatureName: z.string().max(120).optional(),
+  showConditions: z.coerce.boolean().optional().default(true),
+  showHse: z.coerce.boolean().optional().default(true),
+  showLegalNotes: z.coerce.boolean().optional().default(true),
+  showResponsibleSignature: z.coerce.boolean().optional().default(true),
+  showCustomerAcceptance: z.coerce.boolean().optional().default(true),
+  showClientLogo: z.coerce.boolean().optional().default(true),
   items: z.array(
     z.object({
       itemCode: z.string().min(1).max(30),

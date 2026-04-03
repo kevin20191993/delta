@@ -15,6 +15,21 @@ interface QuotationPreviewProps {
 }
 
 export default function QuotationPreview({ company, quotation, totals }: QuotationPreviewProps) {
+  const activeTextBlocks = [
+    quotation.showConditions ? { key: 'conditions', title: 'Condiciones', body: safeText(quotation.conditions) } : null,
+    quotation.showHse ? { key: 'hse', title: 'HSE / seguridad', body: safeText(quotation.hseNotes) } : null,
+    quotation.showLegalNotes ? { key: 'notes', title: 'Notas y validez', body: `${safeText(quotation.legalNotes)} | Validez: ${quotation.validityDays} dias.` } : null
+  ].filter(Boolean) as Array<{ key: string; title: string; body: string }>;
+
+  const activeSignatures = [
+    quotation.showResponsibleSignature
+      ? { key: 'responsible', title: safeText(quotation.responsibleSignature), subtitle: 'Responsable tecnico', accent: 'text-ink' }
+      : null,
+    quotation.showCustomerAcceptance
+      ? { key: 'customer', title: 'Aceptacion de cliente', subtitle: 'Firma y sello', accent: 'text-slate-300' }
+      : null
+  ].filter(Boolean) as Array<{ key: string; title: string; subtitle: string; accent: string }>;
+
   return (
     <article className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-panel animate-liftIn [animation-delay:120ms]">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-r from-[#eef2fb] via-transparent to-[#fff6ed]" />
@@ -54,12 +69,14 @@ export default function QuotationPreview({ company, quotation, totals }: Quotati
         <div className="p-4">
           <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-ember">Proyecto / ubicacion</p>
           <p className="text-2xl font-display">{safeText(quotation.projectLocation)}</p>
-          {quotation.clientLogo ? (
+          {quotation.showClientLogo && quotation.clientLogo ? (
             <div className="mt-3 inline-flex rounded-xl bg-white p-2">
               <img src={quotation.clientLogo} alt="Logo cliente" className="h-10 w-auto object-contain" />
             </div>
           ) : (
-            <p className="mt-3 text-xs text-slate-300">Sin logo de cliente.</p>
+            <p className="mt-3 text-xs text-slate-300">
+              {quotation.showClientLogo ? 'Sin logo de cliente.' : 'Logo del cliente oculto.'}
+            </p>
           )}
         </div>
       </section>
@@ -94,32 +111,36 @@ export default function QuotationPreview({ company, quotation, totals }: Quotati
         </table>
       </section>
 
-      <section className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <div className="rounded-xl border border-slate-200 p-3">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-ink">Condiciones</p>
-            <p className="text-sm text-slate">{safeText(quotation.conditions)}</p>
-          </div>
-          <div className="rounded-xl border border-slate-200 p-3">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-ink">HSE / seguridad</p>
-            <p className="text-sm text-slate">{safeText(quotation.hseNotes)}</p>
-          </div>
-          <div className="rounded-xl border border-slate-200 p-3 md:col-span-2">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-ink">Notas y validez</p>
-            <p className="text-sm text-slate">{safeText(quotation.legalNotes)} | Validez: {quotation.validityDays} dias.</p>
-          </div>
-          <div className="grid grid-cols-2 gap-6 pt-6 md:col-span-2">
-            <div className="text-center">
-              <div className="mx-auto mb-2 h-px w-40 bg-slate-300" />
-              <p className="text-sm font-semibold text-ink">{safeText(quotation.responsibleSignature)}</p>
-              <p className="text-xs uppercase tracking-[0.1em] text-slate">Responsable tecnico</p>
+      <section className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="space-y-4">
+          {activeTextBlocks.length > 0 && (
+            <div className={`grid gap-3 ${activeTextBlocks.length === 1 ? 'grid-cols-1' : 'md:grid-cols-2'}`}>
+              {activeTextBlocks.map((block) => (
+                <div
+                  key={block.key}
+                  className={block.key === 'notes'
+                    ? 'rounded-xl border border-slate-200 p-4 md:col-span-2'
+                    : 'rounded-xl border border-slate-200 p-4'}
+                >
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-ink">{block.title}</p>
+                  <p className="min-h-16 whitespace-pre-wrap break-words text-sm leading-6 text-slate">{block.body}</p>
+                </div>
+              ))}
             </div>
-            <div className="text-center">
-              <div className="mx-auto mb-2 h-px w-40 bg-slate-300" />
-              <p className="text-sm font-semibold text-slate-300">Aceptacion de cliente</p>
-              <p className="text-xs uppercase tracking-[0.1em] text-slate-300">Firma y sello</p>
+          )}
+          {activeSignatures.length > 0 && (
+            <div className={`grid gap-6 pt-4 ${activeSignatures.length === 1 ? 'grid-cols-1 justify-items-center' : 'grid-cols-2'}`}>
+              {activeSignatures.map((signature) => (
+                <div key={signature.key} className="w-full max-w-xs text-center">
+                  <div className="mx-auto mb-2 h-px w-40 bg-slate-300" />
+                  <p className={`text-sm font-semibold ${signature.accent}`}>{signature.title}</p>
+                  <p className={`text-xs uppercase tracking-[0.1em] ${signature.key === 'customer' ? 'text-slate-300' : 'text-slate'}`}>
+                    {signature.subtitle}
+                  </p>
+                </div>
+              ))}
             </div>
-          </div>
+          )}
         </div>
 
         <aside className="rounded-3xl bg-ink p-5 text-white">

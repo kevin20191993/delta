@@ -14,6 +14,14 @@ interface QuotationFormProps {
 const panelClass = 'rounded-2xl border border-slate-200 bg-white p-5 shadow-panel';
 const fieldClass =
   'w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-ink outline-none transition focus:border-steel';
+const visibilityOptions: Array<{ key: keyof Pick<QuotationDraft, 'showConditions' | 'showHse' | 'showLegalNotes' | 'showResponsibleSignature' | 'showCustomerAcceptance' | 'showClientLogo'>; label: string }> = [
+  { key: 'showConditions', label: 'Mostrar condiciones' },
+  { key: 'showHse', label: 'Mostrar HSE / seguridad' },
+  { key: 'showLegalNotes', label: 'Mostrar notas y validez' },
+  { key: 'showResponsibleSignature', label: 'Mostrar firma responsable' },
+  { key: 'showCustomerAcceptance', label: 'Mostrar aceptacion de cliente' },
+  { key: 'showClientLogo', label: 'Mostrar logo del cliente' }
+];
 
 function fileFromEvent(event: ChangeEvent<HTMLInputElement>): File | undefined {
   return event.target.files?.[0];
@@ -170,6 +178,25 @@ export default function QuotationForm({
             <option key={customer.id} value={customer.companyName || customer.name} />
           ))}
         </datalist>
+      </section>
+
+      <section className={`${panelClass} animate-liftIn [animation-delay:80ms]`}>
+        <div className="mb-4">
+          <h2 className="font-display text-xl text-ink">Campos visibles</h2>
+          <p className="text-sm text-slate">Activa o desactiva los bloques que quieres mostrar en la cotizacion y en el PDF.</p>
+        </div>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          {visibilityOptions.map((option) => (
+            <label key={option.key} className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-ink">
+              <input
+                type="checkbox"
+                checked={quotation[option.key]}
+                onChange={(e) => onQuotationField(option.key, e.target.checked)}
+              />
+              <span>{option.label}</span>
+            </label>
+          ))}
+        </div>
       </section>
     </div>
   );

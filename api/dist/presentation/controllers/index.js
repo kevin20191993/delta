@@ -43,6 +43,29 @@ class QuotationController {
             }
         }
     }
+    async update(req, res) {
+        try {
+            const { id } = req.params;
+            const companySettingsId = req.headers['x-company-id'] || 'default';
+            const validated = index_1.CreateQuotationValidation.parse(req.body);
+            const result = await this.quotationService.update(id, companySettingsId, validated);
+            res.json(result);
+        }
+        catch (err) {
+            if (err instanceof zod_1.ZodError) {
+                res.status(400).json({ error: 'Validation error', details: err.errors });
+            }
+            else if (err instanceof Error && err.message.includes('not found')) {
+                res.status(404).json({ error: err.message });
+            }
+            else if (err instanceof Error) {
+                res.status(500).json({ error: err.message });
+            }
+            else {
+                res.status(500).json({ error: 'Unknown error' });
+            }
+        }
+    }
     async getByFolio(req, res) {
         try {
             const { folio } = req.params;
