@@ -6,12 +6,15 @@ import { createPdfRoutes } from './presentation/pdf-routes';
 import { createAuthRoutes } from './presentation/auth-routes';
 import { initDb } from './infrastructure/database/connection';
 import { PdfService } from './infrastructure/pdf/pdf.service';
+import { MySqlAuthRepository } from './infrastructure/mysql/auth-repository';
 
 async function bootstrap(): Promise<Express> {
   const app = express();
   const databaseUrl = process.env.DATABASE_URL ? new URL(process.env.DATABASE_URL) : null;
+  const authRepo = new MySqlAuthRepository();
 
   // Middleware
+  app.set('trust proxy', true);
   app.use(cors());
   app.use(express.json({ limit: '50mb' }));
 
@@ -22,6 +25,13 @@ async function bootstrap(): Promise<Express> {
     user: decodeURIComponent(databaseUrl?.username || process.env.DB_USER || 'postgres'),
     password: decodeURIComponent(databaseUrl?.password || process.env.DB_PASSWORD || 'postgres'),
     database: databaseUrl?.pathname.replace(/^\//, '') || process.env.DB_NAME || 'quotations'
+  });
+
+  await authRepo.ensureSchema();
+  await authRepo.ensureDefaultAdminUser({
+    username: process.env.ADMIN_USER || 'admin',
+    password: process.env.ADMIN_PASSWORD || 'changeme',
+    email: process.env.ADMIN_EMAIL || process.env.MAIL_FROM_EMAIL || 'admin@localhost'
   });
 
   // Initialize PDF service

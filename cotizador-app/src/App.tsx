@@ -1,8 +1,10 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { isAuthenticated } from './lib/api';
 import LoginPage from './pages/LoginPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import QuotationsListPage from './pages/QuotationsListPage';
 import QuotationEditorPage from './pages/QuotationEditorPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   if (!isAuthenticated()) {
@@ -16,6 +18,8 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/cotizador/login" element={<LoginPage />} />
+        <Route path="/cotizador/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/cotizador/reset-password" element={<ResetPasswordPage />} />
         <Route
           path="/cotizador/"
           element={

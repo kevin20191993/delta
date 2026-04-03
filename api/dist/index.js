@@ -11,10 +11,13 @@ const pdf_routes_1 = require("./presentation/pdf-routes");
 const auth_routes_1 = require("./presentation/auth-routes");
 const connection_1 = require("./infrastructure/database/connection");
 const pdf_service_1 = require("./infrastructure/pdf/pdf.service");
+const auth_repository_1 = require("./infrastructure/mysql/auth-repository");
 async function bootstrap() {
     const app = (0, express_1.default)();
     const databaseUrl = process.env.DATABASE_URL ? new URL(process.env.DATABASE_URL) : null;
+    const authRepo = new auth_repository_1.MySqlAuthRepository();
     // Middleware
+    app.set('trust proxy', true);
     app.use((0, cors_1.default)());
     app.use(express_1.default.json({ limit: '50mb' }));
     // Initialize database
@@ -24,6 +27,12 @@ async function bootstrap() {
         user: decodeURIComponent(databaseUrl?.username || process.env.DB_USER || 'postgres'),
         password: decodeURIComponent(databaseUrl?.password || process.env.DB_PASSWORD || 'postgres'),
         database: databaseUrl?.pathname.replace(/^\//, '') || process.env.DB_NAME || 'quotations'
+    });
+    await authRepo.ensureSchema();
+    await authRepo.ensureDefaultAdminUser({
+        username: process.env.ADMIN_USER || 'admin',
+        password: process.env.ADMIN_PASSWORD || 'changeme',
+        email: process.env.ADMIN_EMAIL || process.env.MAIL_FROM_EMAIL || 'admin@localhost'
     });
     // Initialize PDF service
     const pdfService = new pdf_service_1.PdfService();

@@ -15,8 +15,8 @@ export function clearToken(): void {
 export function isAuthenticated(): boolean {
   const token = getToken();
   if (!token) return false;
+
   try {
-    // Decode JWT payload (no verification, just expiry check)
     const payload = JSON.parse(atob(token.split('.')[1]));
     return payload.exp * 1000 > Date.now();
   } catch {
@@ -33,47 +33,73 @@ export interface QuotationResponse {
   };
 }
 
-export class ApiClient {
-  static async fetch<T = any>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const url = `${API_BASE}${endpoint}`;
-    const token = getToken();
+interface RequestOptions extends RequestInit {
+  requiresAuth?: boolean;
+}
 
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        'x-company-id': 'default',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        ...options.headers
-      }
-    });
+async function request<T = any>(endpoint: string, options: RequestOptions = {}): Promise<T> {
+  const url = `${API_BASE}${endpoint}`;
+  const token = getToken();
+  const requiresAuth = options.requiresAuth ?? true;
 
-    if (response.status === 401) {
-      clearToken();
-      window.location.href = '/cotizador/login';
-      throw new Error('Sesión expirada');
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      'x-company-id': 'default',
+      ...(requiresAuth && token ? { Authorization: `Bearer ${token}` } : {}),
+      ...options.headers
     }
+  });
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-      throw new Error(error.error || `HTTP ${response.status}`);
-    }
-
-    return response.json();
+  if (requiresAuth && response.status === 401) {
+    clearToken();
+    window.location.href = '/cotizador/login';
+    throw new Error('Sesión expirada');
   }
 
-  static async login(username: string, password: string): Promise<{ token: string; user: string }> {
-    const url = `${API_BASE}/api/auth/login`;
-    const response = await fetch(url, {
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+    throw new Error(error.error || `HTTP ${response.status}`);
+  }
+
+  return response.json();
+}
+
+export class ApiClient {
+  static login(username: string, password: string): Promise<{ token: string; user: string; email: string; role: string }> {
+    return request('/api/auth/login', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      requiresAuth: false,
       body: JSON.stringify({ username, password })
     });
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Error de red' }));
-      throw new Error(error.error || 'Credenciales incorrectas');
-    }
-    return response.json();
+  }
+
+  static requestPasswordReset(email: string): Promise<{ message: string; resetUrl?: string }> {
+    return request('/api/auth/forgot-password', {
+      method: 'POST',
+      requiresAuth: false,
+      body: JSON.stringify({ email })
+    });
+  }
+
+  static validateResetToken(token: string): Promise<{ email: string; expiresAt: string }> {
+    return request(`/api/auth/reset-password/${encodeURIComponent(token)}`, {
+      method: 'GET',
+      requiresAuth: false
+    });
+  }
+
+  static resetPassword(token: string, password: string, confirmPassword: string): Promise<{ message: string }> {
+    return request('/api/auth/reset-password', {
+      method: 'POST',
+      requiresAuth: false,
+      body: JSON.stringify({ token, password, confirmPassword })
+    });
+  }
+
+  static fetch<T = any>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    return request(endpoint, options);
   }
 
   static getCompany() {
@@ -103,7 +129,7 @@ export class ApiClient {
     if (filters?.offset) params.append('offset', filters.offset.toString());
 
     const query = params.toString();
-    return this.fetch(`/api/quotations${query ? '?' + query : ''}`, { method: 'GET' });
+    return this.fetch(`/api/quotations${query ? `?${query}` : ''}`, { method: 'GET' });
   }
 
   static updateQuotationStatus(id: string, status: string, note?: string) {
@@ -114,7 +140,10 @@ export class ApiClient {
   }
 
   static duplicateQuotation(id: string, folio: string) {
-    return this.fetch(`/api/quotations/${id}/duplicate`, { method: 'POST', body: JSON.stringify({ folio }) });
+    return this.fetch(`/api/quotations/${id}/duplicate`, {
+      method: 'POST',
+      body: JSON.stringify({ folio })
+    });
   }
 
   static deleteQuotation(id: string) {
@@ -125,4 +154,3 @@ export class ApiClient {
     return this.fetch(`/api/quotations/${id}/export-pdf`, { method: 'POST' });
   }
 }
-

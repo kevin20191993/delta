@@ -114,9 +114,34 @@ CREATE TABLE IF NOT EXISTS quotation_status_history (
   changed_by varchar(100)
 );
 
+-- Users
+CREATE TABLE IF NOT EXISTS users (
+  id uuid PRIMARY KEY,
+  username varchar(80) NOT NULL UNIQUE,
+  email varchar(160) NOT NULL UNIQUE,
+  password_hash text NOT NULL,
+  role varchar(40) NOT NULL DEFAULT 'admin',
+  is_active boolean NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- Password reset tokens
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+  id uuid PRIMARY KEY,
+  user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token_hash varchar(64) NOT NULL UNIQUE,
+  expires_at timestamptz NOT NULL,
+  used_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_quotations_folio ON quotations(folio);
 CREATE INDEX IF NOT EXISTS idx_quotations_status ON quotations(status);
 CREATE INDEX IF NOT EXISTS idx_quotations_date ON quotations(quotation_date);
 CREATE INDEX IF NOT EXISTS idx_quotation_items_quotation_order ON quotation_items(quotation_id, item_order);
 CREATE INDEX IF NOT EXISTS idx_company_settings_id ON company_settings(id);
+CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_user_id ON password_reset_tokens(user_id);
