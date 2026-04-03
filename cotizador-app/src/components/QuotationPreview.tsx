@@ -111,16 +111,35 @@ export default function QuotationPreview({ company, quotation, totals }: Quotati
         </table>
       </section>
 
-      <section className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="space-y-4">
+      <section className="space-y-4">
+        <aside className="rounded-3xl bg-ink p-4 text-white">
+          <div className="space-y-2 border-b border-white/10 pb-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-slate-300">Subtotal</span>
+              <strong>{toMoney(totals.subtotal, quotation.currency)}</strong>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-slate-300">Descuento</span>
+              <strong>{toMoney(totals.discountAmount, quotation.currency)}</strong>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-slate-300">IVA ({company.taxPercent}%)</span>
+              <strong>{toMoney(totals.taxAmount, quotation.currency)}</strong>
+            </div>
+          </div>
+          <div className="mt-4 flex items-end justify-between gap-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-ember">Inversion total</p>
+            <p className="font-display text-4xl tracking-tight">{toMoney(totals.total, quotation.currency)}</p>
+          </div>
+        </aside>
+
+        <div className="space-y-3">
           {activeTextBlocks.length > 0 && (
-            <div className={`grid gap-3 ${activeTextBlocks.length === 1 ? 'grid-cols-1' : 'md:grid-cols-2'}`}>
+            <div className="grid gap-3 grid-cols-1">
               {activeTextBlocks.map((block) => (
                 <div
                   key={block.key}
-                  className={block.key === 'notes'
-                    ? 'rounded-xl border border-slate-200 p-4 md:col-span-2'
-                    : 'rounded-xl border border-slate-200 p-4'}
+                  className="rounded-xl border border-slate-200 p-4"
                 >
                   <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-ink">{block.title}</p>
                   <p className="min-h-16 whitespace-pre-wrap break-words text-sm leading-6 text-slate">{block.body}</p>
@@ -142,25 +161,6 @@ export default function QuotationPreview({ company, quotation, totals }: Quotati
             </div>
           )}
         </div>
-
-        <aside className="rounded-3xl bg-ink p-5 text-white">
-          <div className="space-y-2 border-b border-white/10 pb-4">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-300">Subtotal</span>
-              <strong>{toMoney(totals.subtotal, quotation.currency)}</strong>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-300">Descuento</span>
-              <strong>{toMoney(totals.discountAmount, quotation.currency)}</strong>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-300">IVA ({company.taxPercent}%)</span>
-              <strong>{toMoney(totals.taxAmount, quotation.currency)}</strong>
-            </div>
-          </div>
-          <p className="mt-5 text-xs font-semibold uppercase tracking-[0.16em] text-ember">Inversion total</p>
-          <p className="mt-1 font-display text-5xl tracking-tight">{toMoney(totals.total, quotation.currency)}</p>
-        </aside>
       </section>
     </article>
   );

@@ -79,7 +79,7 @@ class PdfService {
             .join('');
         const textBlocksHtml = textBlocks
             .map((block) => `
-        <div class="condition-box ${block.key === 'notes' ? 'condition-box-wide' : ''}">
+        <div class="condition-box">
           <label class="label">${block.title}</label>
           <p>${block.body}</p>
         </div>
@@ -135,37 +135,35 @@ class PdfService {
     
     .client-logo { width: 80px; height: auto; margin-top: 12px; }
     
-    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
     thead { background: #08142b; color: white; }
     thead th { padding: 10px; text-align: left; font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
     tbody td { padding: 8px; border-bottom: 1px solid #e5e7eb; font-size: 10px; }
     tbody tr:nth-child(even) { background: #f9fafb; }
     
-    .summary { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 20px; margin-bottom: 20px; align-items: start; }
-    .conditions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; }
-    .condition-box { background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; min-height: 98px; }
-    .condition-box-wide { grid-column: 1 / -1; }
+    .summary { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 16px; align-items: start; }
+    .conditions { display: grid; grid-template-columns: 1fr; gap: 10px; align-items: start; }
+    .condition-box { background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px 12px; min-height: 68px; width: 100%; }
     .condition-box .label { font-size: 9px; font-weight: bold; text-transform: uppercase; color: #08142b; letter-spacing: 0.5px; margin-bottom: 8px; display: block; }
     .condition-box p { font-size: 10px; color: #666; line-height: 1.5; white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere; }
     
-    .totals-box { background: #08142b; color: white; border-radius: 16px; padding: 20px; }
-    .total-row { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 8px; }
+    .totals-box { background: #08142b; color: white; border-radius: 16px; padding: 16px 18px; width: 100%; }
+    .total-row { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 6px; }
     .total-row .label { color: rgba(255,255,255,0.7); }
     .total-row .value { font-weight: bold; }
     
-    .total-divider { border-top: 1px solid rgba(255,255,255,0.15); margin: 12px 0; padding-top: 12px; margin-bottom: 12px; }
-    .total-final { margin-top: 16px; }
+    .total-divider { border-top: 1px solid rgba(255,255,255,0.15); margin: 10px 0; padding-top: 10px; margin-bottom: 10px; }
+    .total-final { display: flex; align-items: end; justify-content: space-between; gap: 14px; margin-top: 8px; }
     .total-final .label { font-size: 10px; text-transform: uppercase; color: #f97316; font-weight: bold; letter-spacing: 0.5px; display: block; margin-bottom: 6px; }
-    .total-final .amount { font-size: 42px; font-weight: bold; line-height: 1; }
+    .total-final .amount { font-size: 30px; font-weight: bold; line-height: 1; }
     
-    .signatures { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px; margin-top: 34px; }
+    .signatures { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 36px; margin-top: 24px; }
     .signatures-single { grid-template-columns: 1fr; justify-items: center; }
     .signature { text-align: center; width: 100%; max-width: 250px; justify-self: center; }
     .sig-line { border-top: 1px solid #333; width: 140px; margin: 0 auto 6px; }
     .sig-label { font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
     .sig-subtitle { font-size: 9px; color: #999; margin-top: 4px; }
     
-    .footer-note { font-size: 9px; color: #999; margin-top: 20px; text-align: center; line-height: 1.4; }
   </style>
 </head>
 <body>
@@ -221,10 +219,6 @@ class PdfService {
     </table>
 
     <div class="summary">
-      <div class="conditions">
-        ${textBlocksHtml}
-      </div>
-
       <div class="totals-box">
         <div class="total-row">
           <span class="label">Subtotal</span>
@@ -244,13 +238,13 @@ class PdfService {
           <div class="amount">${formatMoney(total, quotation.currency)}</div>
         </div>
       </div>
+
+      <div class="conditions">
+        ${textBlocksHtml}
+      </div>
     </div>
 
     ${signaturesHtml}
-
-    <div class="footer-note">
-      Propuesta valida por ${quotation.validityDays} dias naturales | Generado automaticamente
-    </div>
   </div>
 </body>
 </html>

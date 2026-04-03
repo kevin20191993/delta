@@ -352,6 +352,7 @@ export default function QuotationEditorPage() {
 
     setIsExportingPdf(true);
     setError('');
+    const previewWindow = window.open('', '_blank');
     try {
       const token = localStorage.getItem('kp-cotizador-token') || '';
       const response = await fetch(`/api/quotations/${quotationId}/export-pdf`, {
@@ -361,12 +362,16 @@ export default function QuotationEditorPage() {
       if (!response.ok) throw new Error('Error generando PDF');
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${quotation.folio}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
+      if (previewWindow) {
+        previewWindow.location.href = url;
+      } else {
+        window.open(url, '_blank');
+      }
+      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
     } catch (err) {
+      if (previewWindow && !previewWindow.closed) {
+        previewWindow.close();
+      }
       setError(err instanceof Error ? err.message : 'Error al exportar PDF');
     } finally {
       setIsExportingPdf(false);
@@ -440,9 +445,9 @@ export default function QuotationEditorPage() {
                 onClick={handleExportPdf}
                 disabled={isExportingPdf || !quotationId}
                 className="rounded-lg bg-ember px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:opacity-50"
-                title={!quotationId ? 'Guarda primero la cotización' : 'Exportar PDF'}
+                title={!quotationId ? 'Guarda primero la cotización' : 'Ver PDF'}
               >
-                {isExportingPdf ? 'Generando...' : 'Exportar PDF'}
+                {isExportingPdf ? 'Generando...' : 'Ver PDF'}
               </button>
             </div>
           </div>

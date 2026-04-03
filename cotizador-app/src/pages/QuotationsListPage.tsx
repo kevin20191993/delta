@@ -111,8 +111,9 @@ export default function QuotationsListPage() {
     }
   };
 
-  const handleExportPdf = async (id: string, folio: string) => {
+  const handleExportPdf = async (id: string) => {
     setExportingId(id);
+    const previewWindow = window.open('', '_blank');
     try {
       const token = localStorage.getItem('kp-cotizador-token') || '';
       const response = await fetch(`/api/quotations/${id}/export-pdf`, {
@@ -122,12 +123,16 @@ export default function QuotationsListPage() {
       if (!response.ok) throw new Error('Error generando PDF');
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${folio}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
+      if (previewWindow) {
+        previewWindow.location.href = url;
+      } else {
+        window.open(url, '_blank');
+      }
+      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
     } catch (err) {
+      if (previewWindow && !previewWindow.closed) {
+        previewWindow.close();
+      }
       alert(err instanceof Error ? err.message : 'Error al exportar PDF');
     } finally {
       setExportingId(null);
@@ -305,9 +310,9 @@ export default function QuotationsListPage() {
                           </button>
                           <button
                             type="button"
-                            title="Exportar PDF"
+                            title="Ver PDF"
                             disabled={exportingId === q.id}
-                            onClick={() => handleExportPdf(q.id, q.folio)}
+                            onClick={() => handleExportPdf(q.id)}
                             className="rounded-md bg-ink px-2 py-1 text-xs font-semibold text-white hover:bg-steel disabled:opacity-50 transition"
                           >
                             {exportingId === q.id ? '...' : 'PDF'}
