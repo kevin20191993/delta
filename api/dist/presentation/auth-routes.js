@@ -25,7 +25,9 @@ function signToken(user) {
         sub: String(user.id),
         username: user.username,
         email: user.email,
-        role: user.role
+        role: user.role,
+        fullName: user.fullName || '',
+        jobTitle: user.jobTitle || ''
     }, secret, { expiresIn: '8h' });
 }
 function createAuthRoutes() {
@@ -50,7 +52,9 @@ function createAuthRoutes() {
                 token: signToken(user),
                 user: user.username,
                 email: user.email,
-                role: user.role
+                role: user.role,
+                fullName: user.fullName || user.username,
+                jobTitle: user.jobTitle || ''
             });
         }
         catch (error) {

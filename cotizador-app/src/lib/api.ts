@@ -24,6 +24,25 @@ export function isAuthenticated(): boolean {
   }
 }
 
+export function getSessionUser(): SessionUser | null {
+  const token = getToken();
+  if (!token) return null;
+
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return {
+      id: String(payload.sub || ''),
+      username: String(payload.username || ''),
+      email: String(payload.email || ''),
+      role: String(payload.role || 'admin'),
+      fullName: payload.fullName ? String(payload.fullName) : undefined,
+      jobTitle: payload.jobTitle ? String(payload.jobTitle) : undefined
+    };
+  } catch {
+    return null;
+  }
+}
+
 export interface QuotationResponse {
   quotation: {
     id: string;
@@ -39,6 +58,17 @@ export interface UserSummary {
   email: string;
   role: string;
   isActive: boolean;
+  fullName?: string;
+  jobTitle?: string;
+}
+
+export interface SessionUser {
+  id: string;
+  username: string;
+  email: string;
+  role: string;
+  fullName?: string;
+  jobTitle?: string;
 }
 
 export interface CustomerRecord {
@@ -90,7 +120,7 @@ async function request<T = any>(endpoint: string, options: RequestOptions = {}):
 }
 
 export class ApiClient {
-  static login(username: string, password: string): Promise<{ token: string; user: string; email: string; role: string }> {
+  static login(username: string, password: string): Promise<{ token: string; user: string; email: string; role: string; fullName?: string; jobTitle?: string }> {
     return request('/api/auth/login', {
       method: 'POST',
       requiresAuth: false,
@@ -196,12 +226,29 @@ export class ApiClient {
   static createUser(data: {
     username: string;
     email: string;
+    fullName: string;
+    jobTitle: string;
     password: string;
     confirmPassword: string;
     role: string;
   }): Promise<{ user: UserSummary }> {
     return this.fetch('/api/users', {
       method: 'POST',
+      body: JSON.stringify(data)
+    });
+  }
+
+  static updateUser(id: number, data: {
+    username: string;
+    email: string;
+    fullName: string;
+    jobTitle: string;
+    password?: string;
+    confirmPassword?: string;
+    role: string;
+  }): Promise<{ user: UserSummary }> {
+    return this.fetch(`/api/users/${id}`, {
+      method: 'PUT',
       body: JSON.stringify(data)
     });
   }

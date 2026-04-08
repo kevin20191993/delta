@@ -23,7 +23,7 @@ export function createRoutes(): Router {
   const customerService = new CustomerService(customerRepo);
   const authRepo = new MySqlAuthRepository();
 
-  const quotationController = new QuotationController(quotationService, companyService);
+  const quotationController = new QuotationController(quotationService, companyService, authRepo);
   const companyController = new CompanyController(companyService);
   const userController = new UserController(authRepo);
   const customerController = new CustomerController(customerService);
@@ -49,6 +49,7 @@ export function createRoutes(): Router {
   // User routes (protected)
   router.get('/api/users', requireAuth, (req, res) => userController.list(req, res));
   router.post('/api/users', requireAuth, (req, res) => userController.create(req as any, res));
+  router.put('/api/users/:id', requireAuth, (req, res) => userController.update(req as any, res));
 
   return router;
 }

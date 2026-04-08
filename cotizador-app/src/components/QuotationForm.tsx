@@ -169,8 +169,12 @@ export default function QuotationForm({
             <textarea className={`${fieldClass} h-20`} value={quotation.legalNotes} onChange={(e) => onQuotationField('legalNotes', e.target.value)} />
           </label>
           <label className="text-sm text-slate lg:col-span-2">
-            Responsable tecnico (firma)
-            <input className={fieldClass} value={quotation.responsibleSignature} onChange={(e) => onQuotationField('responsibleSignature', e.target.value)} />
+            Usuario que elabora la cotizacion
+            <input className={`${fieldClass} bg-slate-50`} value={quotation.salespersonFullName || quotation.responsibleSignature} readOnly />
+          </label>
+          <label className="text-sm text-slate lg:col-span-2">
+            Puesto en la propuesta
+            <input className={`${fieldClass} bg-slate-50`} value={quotation.salespersonJobTitle || 'Asesor comercial'} readOnly />
           </label>
         </div>
         <datalist id="customer-company-options">

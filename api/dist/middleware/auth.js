@@ -19,7 +19,9 @@ function requireAuth(req, res, next) {
             id: decoded.sub || '',
             username: decoded.username || '',
             email: decoded.email || '',
-            role: decoded.role || 'admin'
+            role: decoded.role || 'admin',
+            fullName: decoded.fullName || '',
+            jobTitle: decoded.jobTitle || ''
         };
         next();
     }

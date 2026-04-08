@@ -33,6 +33,14 @@ export class QuotationService {
   }
 
   async create(companySettingsId: string, data: CreateQuotationDTO): Promise<any> {
+    return this.createWithAuthor(companySettingsId, data);
+  }
+
+  async createWithAuthor(
+    companySettingsId: string,
+    data: CreateQuotationDTO,
+    author?: { username: string; fullName?: string; jobTitle?: string }
+  ): Promise<any> {
     const resolvedCompanySettingsId = normalizeCompanySettingsId(companySettingsId);
     const safeFolio = (await this.quotationRepo.findByFolio(data.folio))
       ? await this.getNextFolio()
@@ -45,13 +53,16 @@ export class QuotationService {
       rfc: data.customerRfc || undefined,
       address: data.customerAddress || undefined,
       logoDataUrl: data.clientLogo || undefined,
-      updatedBy: 'api'
+      updatedBy: author?.username || 'api'
     });
     const subtotal = data.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
     const discountAmount = subtotal * (data.discountPercent / 100);
     const taxable = Math.max(subtotal - discountAmount, 0);
     const taxAmount = taxable * (data.taxPercent / 100);
     const total = taxable + taxAmount;
+
+    const authorName = author?.fullName?.trim() || author?.username || data.responsibleSignatureName || 'Responsable comercial';
+    const authorJobTitle = author?.jobTitle?.trim() || 'Asesor comercial';
 
     const quotation = await this.quotationRepo.create({
       folio: safeFolio,
@@ -73,7 +84,9 @@ export class QuotationService {
       hseNotes: data.hseNotes,
       legalNotes: data.legalNotes,
       observations: data.observations,
-      responsibleSignatureName: data.responsibleSignatureName,
+      responsibleSignatureName: authorName,
+      salespersonFullName: authorName,
+      salespersonJobTitle: authorJobTitle,
       showConditions: data.showConditions,
       showHse: data.showHse,
       showLegalNotes: data.showLegalNotes,
@@ -81,7 +94,7 @@ export class QuotationService {
       showCustomerAcceptance: data.showCustomerAcceptance,
       showClientLogo: data.showClientLogo,
       status: 'draft',
-      createdBy: 'api'
+      createdBy: author?.username || 'api'
     });
 
     await this.itemRepo.createBatch(
@@ -93,7 +106,7 @@ export class QuotationService {
         unit: item.unit,
         unitPrice: item.unitPrice
       })),
-      'api'
+      author?.username || 'api'
     );
 
     const items = await this.itemRepo.findByQuotationId(quotation.id);
@@ -145,6 +158,15 @@ export class QuotationService {
   }
 
   async update(id: string, companySettingsId: string, data: CreateQuotationDTO): Promise<any> {
+    return this.updateWithAuthor(id, companySettingsId, data);
+  }
+
+  async updateWithAuthor(
+    id: string,
+    companySettingsId: string,
+    data: CreateQuotationDTO,
+    author?: { username: string; fullName?: string; jobTitle?: string }
+  ): Promise<any> {
     const resolvedCompanySettingsId = normalizeCompanySettingsId(companySettingsId);
     const existing = await this.quotationRepo.findById(id);
 
@@ -165,7 +187,7 @@ export class QuotationService {
       rfc: data.customerRfc || undefined,
       address: data.customerAddress || undefined,
       logoDataUrl: data.clientLogo || undefined,
-      updatedBy: 'api'
+      updatedBy: author?.username || 'api'
     });
 
     const subtotal = data.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
@@ -173,6 +195,9 @@ export class QuotationService {
     const taxable = Math.max(subtotal - discountAmount, 0);
     const taxAmount = taxable * (data.taxPercent / 100);
     const total = taxable + taxAmount;
+
+    const authorName = author?.fullName?.trim() || author?.username || existing.salespersonFullName || data.responsibleSignatureName || 'Responsable comercial';
+    const authorJobTitle = author?.jobTitle?.trim() || existing.salespersonJobTitle || 'Asesor comercial';
 
     const quotation = await this.quotationRepo.update(
       id,
@@ -196,7 +221,9 @@ export class QuotationService {
         hseNotes: data.hseNotes,
         legalNotes: data.legalNotes,
         observations: data.observations,
-        responsibleSignatureName: data.responsibleSignatureName,
+        responsibleSignatureName: authorName,
+        salespersonFullName: authorName,
+        salespersonJobTitle: authorJobTitle,
         showConditions: data.showConditions,
         showHse: data.showHse,
         showLegalNotes: data.showLegalNotes,
@@ -204,7 +231,7 @@ export class QuotationService {
         showCustomerAcceptance: data.showCustomerAcceptance,
         showClientLogo: data.showClientLogo
       },
-      'api'
+      author?.username || 'api'
     );
 
     await this.itemRepo.deleteByQuotationId(id);
@@ -217,7 +244,7 @@ export class QuotationService {
         unit: item.unit,
         unitPrice: item.unitPrice
       })),
-      'api'
+      author?.username || 'api'
     );
 
     const items = await this.itemRepo.findByQuotationId(id);
@@ -247,6 +274,8 @@ export class QuotationService {
       legalNotes: original.quotation.legalNotes,
       observations: original.quotation.observations,
       responsibleSignatureName: original.quotation.responsibleSignatureName,
+      salespersonFullName: original.quotation.salespersonFullName,
+      salespersonJobTitle: original.quotation.salespersonJobTitle,
       showConditions: original.quotation.showConditions,
       showHse: original.quotation.showHse,
       showLegalNotes: original.quotation.showLegalNotes,

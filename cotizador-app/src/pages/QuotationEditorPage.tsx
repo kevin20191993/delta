@@ -5,7 +5,7 @@ import QuotationForm from '../components/QuotationForm';
 import QuotationPreview from '../components/QuotationPreview';
 import { createDefaultQuotation, defaultCompanySettings } from '../data/defaults';
 import { padItemId, readImageAsDataUrl } from '../lib/format';
-import { ApiClient, CustomerRecord } from '../lib/api';
+import { ApiClient, CustomerRecord, getSessionUser } from '../lib/api';
 import { CompanySettings, QuotationDraft, QuotationItem } from '../types/quotation';
 
 const COMPANY_STORAGE_KEY = 'kp-cotizador-company-v1';
@@ -65,6 +65,8 @@ function mapApiQuotationToDraft(data: any): QuotationDraft {
     hseNotes: data.quotation.hseNotes ?? data.quotation.hse_notes ?? '',
     legalNotes: data.quotation.legalNotes ?? data.quotation.legal_notes ?? '',
     responsibleSignature: data.quotation.responsibleSignatureName ?? data.quotation.responsible_signature_name ?? '',
+    salespersonFullName: data.quotation.salespersonFullName ?? data.quotation.salesperson_full_name ?? '',
+    salespersonJobTitle: data.quotation.salespersonJobTitle ?? data.quotation.salesperson_job_title ?? '',
     showConditions: data.quotation.showConditions ?? data.quotation.show_conditions ?? true,
     showHse: data.quotation.showHse ?? data.quotation.show_hse ?? true,
     showLegalNotes: data.quotation.showLegalNotes ?? data.quotation.show_legal_notes ?? true,
@@ -97,6 +99,22 @@ export default function QuotationEditorPage() {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const sessionUser = getSessionUser();
+
+  useEffect(() => {
+    if (!sessionUser) return;
+
+    setQuotation((prev) => {
+      const updated = {
+        ...prev,
+        salespersonFullName: sessionUser.fullName || prev.salespersonFullName || sessionUser.username,
+        salespersonJobTitle: sessionUser.jobTitle || prev.salespersonJobTitle || 'Asesor comercial',
+        responsibleSignature: sessionUser.fullName || prev.responsibleSignature || sessionUser.username
+      };
+      localStorage.setItem(QUOTATION_STORAGE_KEY, JSON.stringify(updated));
+      return updated;
+    });
+  }, [sessionUser?.fullName, sessionUser?.jobTitle, sessionUser?.username]);
 
   useEffect(() => {
     const loadInitialData = async () => {
@@ -381,7 +399,9 @@ export default function QuotationEditorPage() {
   const resetQuotation = async () => {
     const next = {
       ...createDefaultQuotation(),
-      responsibleSignature: company.technicalLeadName,
+      responsibleSignature: sessionUser?.fullName || company.technicalLeadName,
+      salespersonFullName: sessionUser?.fullName || sessionUser?.username || '',
+      salespersonJobTitle: sessionUser?.jobTitle || 'Asesor comercial',
       conditions: company.defaultConditions,
       hseNotes: company.defaultHse,
       legalNotes: company.defaultNotes

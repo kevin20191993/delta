@@ -5,15 +5,21 @@ const index_1 = require("../../common/validation/index");
 const zod_1 = require("zod");
 const password_1 = require("../../auth/password");
 class QuotationController {
-    constructor(quotationService, companyService) {
+    constructor(quotationService, companyService, authRepo) {
         this.quotationService = quotationService;
         this.companyService = companyService;
+        this.authRepo = authRepo;
     }
     async create(req, res) {
         try {
             const companySettingsId = req.headers['x-company-id'] || 'default';
             const validated = index_1.CreateQuotationValidation.parse(req.body);
-            const result = await this.quotationService.create(companySettingsId, validated);
+            const currentUser = req.authUser?.id ? await this.authRepo.findById(Number(req.authUser.id)) : null;
+            const result = await this.quotationService.createWithAuthor(companySettingsId, validated, {
+                username: currentUser?.username || req.authUser?.username || 'api',
+                fullName: currentUser?.fullName || req.authUser?.fullName || req.authUser?.username,
+                jobTitle: currentUser?.jobTitle || req.authUser?.jobTitle || ''
+            });
             res.status(201).json(result);
         }
         catch (err) {
@@ -48,7 +54,12 @@ class QuotationController {
             const { id } = req.params;
             const companySettingsId = req.headers['x-company-id'] || 'default';
             const validated = index_1.CreateQuotationValidation.parse(req.body);
-            const result = await this.quotationService.update(id, companySettingsId, validated);
+            const currentUser = req.authUser?.id ? await this.authRepo.findById(Number(req.authUser.id)) : null;
+            const result = await this.quotationService.updateWithAuthor(id, companySettingsId, validated, {
+                username: currentUser?.username || req.authUser?.username || 'api',
+                fullName: currentUser?.fullName || req.authUser?.fullName || req.authUser?.username,
+                jobTitle: currentUser?.jobTitle || req.authUser?.jobTitle || ''
+            });
             res.json(result);
         }
         catch (err) {
@@ -210,7 +221,7 @@ class UserController {
     }
     async create(req, res) {
         try {
-            const { username, email, password, confirmPassword, role = 'admin' } = req.body ?? {};
+            const { username, email, password, confirmPassword, role = 'admin', fullName = '', jobTitle = '' } = req.body ?? {};
             if (typeof username !== 'string' ||
                 typeof email !== 'string' ||
                 typeof password !== 'string' ||
@@ -220,6 +231,14 @@ class UserController {
             }
             if (!username.trim() || !email.trim()) {
                 res.status(400).json({ error: 'Usuario y correo son obligatorios' });
+                return;
+            }
+            if (typeof fullName !== 'string' || !fullName.trim()) {
+                res.status(400).json({ error: 'El nombre completo es obligatorio' });
+                return;
+            }
+            if (typeof jobTitle !== 'string' || !jobTitle.trim()) {
+                res.status(400).json({ error: 'El puesto es obligatorio' });
                 return;
             }
             if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
@@ -238,7 +257,9 @@ class UserController {
                 username,
                 email,
                 passwordHash: (0, password_1.hashPassword)(password),
-                role: role === 'viewer' ? 'viewer' : 'admin'
+                role: role === 'viewer' ? 'viewer' : 'admin',
+                fullName,
+                jobTitle
             });
             res.status(201).json({ user });
         }
@@ -248,6 +269,59 @@ class UserController {
                 return;
             }
             res.status(500).json({ error: 'No fue posible crear el usuario' });
+        }
+    }
+    async update(req, res) {
+        try {
+            const id = Number(req.params.id);
+            const { username, email, password = '', confirmPassword = '', role = 'admin', fullName = '', jobTitle = '' } = req.body ?? {};
+            if (!id || Number.isNaN(id)) {
+                res.status(400).json({ error: 'Usuario inválido' });
+                return;
+            }
+            if (typeof username !== 'string' ||
+                typeof email !== 'string' ||
+                typeof fullName !== 'string' ||
+                typeof jobTitle !== 'string') {
+                res.status(400).json({ error: 'Completa todos los datos del usuario' });
+                return;
+            }
+            if (!username.trim() || !email.trim() || !fullName.trim() || !jobTitle.trim()) {
+                res.status(400).json({ error: 'Usuario, correo, nombre completo y puesto son obligatorios' });
+                return;
+            }
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+                res.status(400).json({ error: 'Correo electrónico inválido' });
+                return;
+            }
+            if ((password || confirmPassword) && password !== confirmPassword) {
+                res.status(400).json({ error: 'Las contraseñas no coinciden' });
+                return;
+            }
+            if (password && password.length < 8) {
+                res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' });
+                return;
+            }
+            const user = await this.authRepo.updateUser(id, {
+                username,
+                email,
+                fullName,
+                jobTitle,
+                role: role === 'viewer' ? 'viewer' : 'admin',
+                passwordHash: password ? (0, password_1.hashPassword)(password) : undefined
+            });
+            res.json({ user });
+        }
+        catch (err) {
+            if (err?.code === 'ER_DUP_ENTRY') {
+                res.status(400).json({ error: 'El usuario o correo ya existe' });
+                return;
+            }
+            if (err instanceof Error && err.message.includes('no encontrado')) {
+                res.status(404).json({ error: err.message });
+                return;
+            }
+            res.status(500).json({ error: 'No fue posible actualizar el usuario' });
         }
     }
 }

@@ -17,7 +17,7 @@ function createRoutes() {
     const companyService = new quotation_service_1.CompanyService(settingsRepo);
     const customerService = new quotation_service_1.CustomerService(customerRepo);
     const authRepo = new auth_repository_1.MySqlAuthRepository();
-    const quotationController = new controllers_1.QuotationController(quotationService, companyService);
+    const quotationController = new controllers_1.QuotationController(quotationService, companyService, authRepo);
     const companyController = new controllers_1.CompanyController(companyService);
     const userController = new controllers_1.UserController(authRepo);
     const customerController = new controllers_1.CustomerController(customerService);
@@ -39,6 +39,7 @@ function createRoutes() {
     // User routes (protected)
     router.get('/api/users', auth_1.requireAuth, (req, res) => userController.list(req, res));
     router.post('/api/users', auth_1.requireAuth, (req, res) => userController.create(req, res));
+    router.put('/api/users/:id', auth_1.requireAuth, (req, res) => userController.update(req, res));
     return router;
 }
 //# sourceMappingURL=routes.js.map

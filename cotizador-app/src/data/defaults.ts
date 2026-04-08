@@ -39,6 +39,8 @@ export const createDefaultQuotation = (): QuotationDraft => ({
   hseNotes: defaultCompanySettings.defaultHse,
   legalNotes: defaultCompanySettings.defaultNotes,
   responsibleSignature: defaultCompanySettings.technicalLeadName,
+  salespersonFullName: '',
+  salespersonJobTitle: '',
   showConditions: true,
   showHse: true,
   showLegalNotes: true,

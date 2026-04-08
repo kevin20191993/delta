@@ -13,10 +13,10 @@ class PostgresQuotationRepository {
         customer_id,
         destination_company, customer_attention, customer_contact, project_location, currency,
         discount_percent, subtotal, tax_percent, tax_amount, total,
-        conditions, hse_notes, legal_notes, observations, responsible_signature_name,
+        conditions, hse_notes, legal_notes, observations, responsible_signature_name, salesperson_full_name, salesperson_job_title,
         show_conditions, show_hse, show_legal_notes, show_responsible_signature, show_customer_acceptance, show_client_logo,
         status, created_at, updated_at, created_by, updated_by
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, NOW(), NOW(), $29, $29)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, NOW(), NOW(), $31, $31)
       RETURNING *
     `;
         const values = [
@@ -41,6 +41,8 @@ class PostgresQuotationRepository {
             data.legalNotes,
             data.observations,
             data.responsibleSignatureName,
+            data.salespersonFullName,
+            data.salespersonJobTitle,
             data.showConditions ?? true,
             data.showHse ?? true,
             data.showLegalNotes ?? true,
@@ -206,6 +208,16 @@ class PostgresQuotationRepository {
             values.push(data.responsibleSignatureName);
             paramIndex++;
         }
+        if (data.salespersonFullName !== undefined) {
+            updates.push(`salesperson_full_name = $${paramIndex}`);
+            values.push(data.salespersonFullName);
+            paramIndex++;
+        }
+        if (data.salespersonJobTitle !== undefined) {
+            updates.push(`salesperson_job_title = $${paramIndex}`);
+            values.push(data.salespersonJobTitle);
+            paramIndex++;
+        }
         if (data.showConditions !== undefined) {
             updates.push(`show_conditions = $${paramIndex}`);
             values.push(data.showConditions);
@@ -296,6 +308,8 @@ class PostgresQuotationRepository {
             legalNotes: row.legal_notes,
             observations: row.observations,
             responsibleSignatureName: row.responsible_signature_name,
+            salespersonFullName: row.salesperson_full_name,
+            salespersonJobTitle: row.salesperson_job_title,
             showConditions: row.show_conditions,
             showHse: row.show_hse,
             showLegalNotes: row.show_legal_notes,

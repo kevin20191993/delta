@@ -15,6 +15,7 @@ interface QuotationPreviewProps {
 }
 
 export default function QuotationPreview({ company, quotation, totals }: QuotationPreviewProps) {
+  const headerImage = '/images/header.jpeg';
   const activeTextBlocks = [
     quotation.showConditions ? { key: 'conditions', title: 'Condiciones', body: safeText(quotation.conditions) } : null,
     quotation.showHse ? { key: 'hse', title: 'HSE / seguridad', body: safeText(quotation.hseNotes) } : null,
@@ -23,7 +24,12 @@ export default function QuotationPreview({ company, quotation, totals }: Quotati
 
   const activeSignatures = [
     quotation.showResponsibleSignature
-      ? { key: 'responsible', title: safeText(quotation.responsibleSignature), subtitle: 'Responsable tecnico', accent: 'text-ink' }
+      ? {
+          key: 'responsible',
+          title: safeText(quotation.salespersonFullName || quotation.responsibleSignature),
+          subtitle: safeText(quotation.salespersonJobTitle, 'Asesor comercial'),
+          accent: 'text-[#08264f]'
+        }
       : null,
     quotation.showCustomerAcceptance
       ? { key: 'customer', title: 'Aceptacion de cliente', subtitle: 'Firma y sello', accent: 'text-slate-300' }
@@ -31,12 +37,14 @@ export default function QuotationPreview({ company, quotation, totals }: Quotati
   ].filter(Boolean) as Array<{ key: string; title: string; subtitle: string; accent: string }>;
 
   return (
-    <article className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-panel animate-liftIn [animation-delay:120ms]">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-r from-[#eef2fb] via-transparent to-[#fff6ed]" />
+    <article className="relative overflow-hidden rounded-3xl border border-[#cfe8fb] bg-white p-6 shadow-panel animate-liftIn [animation-delay:120ms]">
+      <div className="mb-5 overflow-hidden rounded-[26px] border border-[#bfe6ff] shadow-[0_18px_36px_rgba(6,50,97,0.08)]">
+        <img src={headerImage} alt="Header corporativo KP Delta" className="block h-auto w-full" />
+      </div>
 
-      <header className="relative mb-6 grid grid-cols-1 gap-4 border-b border-slate-200 pb-5 lg:grid-cols-[1fr_auto]">
+      <header className="relative mb-6 grid grid-cols-1 gap-4 rounded-[26px] border border-[#cfe8fb] bg-[linear-gradient(135deg,#f5fcff_0%,#ecf8ff_45%,#ffffff_100%)] p-5 lg:grid-cols-[1.3fr_auto]">
         <div className="flex items-start gap-4">
-          <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl bg-ink text-2xl font-bold text-white">
+          <div className="flex h-[76px] w-[76px] items-center justify-center overflow-hidden rounded-[20px] bg-[linear-gradient(180deg,#0d4f94_0%,#08264f_100%)] text-2xl font-bold text-white shadow-[0_12px_24px_rgba(8,38,79,0.18)]">
             {company.companyLogo ? (
               <img src={company.companyLogo} alt="Logo empresa" className="h-full w-full object-contain" />
             ) : (
@@ -44,47 +52,49 @@ export default function QuotationPreview({ company, quotation, totals }: Quotati
             )}
           </div>
           <div>
-            <h1 className="font-display text-3xl tracking-tight text-ink">{safeText(company.companyName, 'Tu empresa')}</h1>
-            <p className="mt-1 text-sm font-semibold tracking-[0.16em] text-ember uppercase">{safeText(company.slogan, 'Servicios industriales')}</p>
+            <h1 className="font-display text-3xl tracking-tight text-[#08264f]">{safeText(company.companyName, 'Tu empresa')}</h1>
+            <p className="mt-1 text-sm font-semibold uppercase tracking-[0.18em] text-[#14b4ff]">{safeText(company.slogan, 'Servicios industriales')}</p>
             <p className="mt-2 text-xs text-slate">RFC: {safeText(company.rfc)} | {safeText(company.address)}</p>
             <p className="text-xs text-slate">Tel: {safeText(company.phone)} | {safeText(company.email)}</p>
           </div>
         </div>
 
-        <div className="text-right">
-          <p className="text-5xl font-display tracking-wide text-slate-200">Cotizacion</p>
-          <p className="text-xs font-semibold uppercase text-slate">Folio</p>
-          <p className="text-2xl font-display text-ink">{safeText(quotation.folio)}</p>
-          <p className="text-xs text-slate">Fecha: {safeText(quotation.date)}</p>
+        <div className="text-right rounded-[22px] bg-[linear-gradient(160deg,#0a2d5a_0%,#124d90_65%,#1db4ff_100%)] px-5 py-4 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/70">Cotizacion</p>
+          <p className="text-2xl font-display">{safeText(quotation.folio)}</p>
+          <p className="mt-1 text-xs text-white/80">Fecha: {safeText(quotation.date)}</p>
         </div>
       </header>
 
-      <section className="mb-6 grid grid-cols-1 gap-0 overflow-hidden rounded-2xl bg-ink text-white lg:grid-cols-2">
-        <div className="border-r border-white/15 p-4">
-          <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-ember">Atencion a</p>
+      <section className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-[1.05fr_0.95fr]">
+        <div className="overflow-hidden rounded-[22px] bg-[linear-gradient(135deg,#0c4e93_0%,#08264f_100%)] p-5 text-white shadow-[0_18px_32px_rgba(8,38,79,0.14)]">
+          <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#7fdcff]">Atencion a</p>
           <p className="text-2xl font-display">{safeText(quotation.customerName)}</p>
           <p className="text-sm text-slate-200">{safeText(quotation.customerContact)}</p>
           <p className="mt-2 text-xs text-slate-300">Empresa: {safeText(quotation.destinationCompany)}</p>
         </div>
-        <div className="p-4">
-          <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-ember">Proyecto / ubicacion</p>
+        <div className="overflow-hidden rounded-[22px] bg-[linear-gradient(135deg,#04346d_0%,#1274c4_72%,#1db4ff_100%)] p-5 text-white shadow-[0_18px_32px_rgba(8,38,79,0.14)]">
+          <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#d8f6ff]">Proyecto / cliente</p>
           <p className="text-2xl font-display">{safeText(quotation.projectLocation)}</p>
+          <p className="mt-2 text-xs text-white/80">
+            Ejecutivo responsable: {safeText(quotation.salespersonFullName || quotation.responsibleSignature)}
+          </p>
           {quotation.showClientLogo && quotation.clientLogo ? (
-            <div className="mt-3 inline-flex rounded-xl bg-white p-2">
-              <img src={quotation.clientLogo} alt="Logo cliente" className="h-10 w-auto object-contain" />
+            <div className="mt-4 flex min-h-[110px] items-center justify-center rounded-[18px] bg-white p-4 shadow-[0_14px_26px_rgba(4,25,58,0.18)]">
+              <img src={quotation.clientLogo} alt="Logo cliente" className="max-h-[76px] w-auto object-contain" />
             </div>
           ) : (
-            <p className="mt-3 text-xs text-slate-300">
+            <p className="mt-3 text-xs text-white/75">
               {quotation.showClientLogo ? 'Sin logo de cliente.' : 'Logo del cliente oculto.'}
             </p>
           )}
         </div>
       </section>
 
-      <section className="mb-6 overflow-hidden rounded-2xl border border-slate-200">
+      <section className="mb-6 overflow-hidden rounded-[22px] border border-[#d9eefc]">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-ink text-left text-white">
+            <tr className="bg-[linear-gradient(90deg,#08264f_0%,#104887_100%)] text-left text-white">
               <th className="px-3 py-2">ID</th>
               <th className="px-3 py-2">Descripcion tecnica del concepto</th>
               <th className="px-3 py-2">Cant.</th>
@@ -112,7 +122,7 @@ export default function QuotationPreview({ company, quotation, totals }: Quotati
       </section>
 
       <section className="space-y-4">
-        <aside className="rounded-3xl bg-ink p-4 text-white">
+        <aside className="rounded-3xl bg-[linear-gradient(135deg,#081f47_0%,#0d4f94_72%,#12b1ff_100%)] p-4 text-white shadow-[0_20px_32px_rgba(8,38,79,0.16)]">
           <div className="space-y-2 border-b border-white/10 pb-3">
             <div className="flex items-center justify-between text-sm">
               <span className="text-slate-300">Subtotal</span>
@@ -128,20 +138,20 @@ export default function QuotationPreview({ company, quotation, totals }: Quotati
             </div>
           </div>
           <div className="mt-4 flex items-end justify-between gap-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-ember">Inversion total</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#98e8ff]">Inversion total</p>
             <p className="font-display text-4xl tracking-tight">{toMoney(totals.total, quotation.currency)}</p>
           </div>
         </aside>
 
         <div className="space-y-3">
           {activeTextBlocks.length > 0 && (
-            <div className="grid gap-3 grid-cols-1">
+            <div className="grid grid-cols-1 gap-3">
               {activeTextBlocks.map((block) => (
                 <div
                   key={block.key}
-                  className="rounded-xl border border-slate-200 p-4"
+                  className="rounded-2xl border border-[#d7ebfb] bg-[linear-gradient(180deg,#ffffff_0%,#f5fbff_100%)] p-4 shadow-[0_8px_18px_rgba(15,72,136,0.04)]"
                 >
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-ink">{block.title}</p>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-[#0d4f94]">{block.title}</p>
                   <p className="min-h-16 whitespace-pre-wrap break-words text-sm leading-6 text-slate">{block.body}</p>
                 </div>
               ))}

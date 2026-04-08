@@ -20,6 +20,8 @@ export interface Quotation {
   legalNotes?: string;
   observations?: string;
   responsibleSignatureName?: string;
+  salespersonFullName?: string;
+  salespersonJobTitle?: string;
   showConditions?: boolean;
   showHse?: boolean;
   showLegalNotes?: boolean;

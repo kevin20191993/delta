@@ -7,6 +7,8 @@ export interface AuthenticatedRequest extends Request {
     username: string;
     email: string;
     role: string;
+    fullName?: string;
+    jobTitle?: string;
   };
 }
 
@@ -25,12 +27,16 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
       username?: string;
       email?: string;
       role?: string;
+      fullName?: string;
+      jobTitle?: string;
     };
     (req as AuthenticatedRequest).authUser = {
       id: decoded.sub || '',
       username: decoded.username || '',
       email: decoded.email || '',
-      role: decoded.role || 'admin'
+      role: decoded.role || 'admin',
+      fullName: decoded.fullName || '',
+      jobTitle: decoded.jobTitle || ''
     };
     next();
   } catch {

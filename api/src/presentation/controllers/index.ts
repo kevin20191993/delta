@@ -9,15 +9,20 @@ import { AuthenticatedRequest } from '../../middleware/auth';
 export class QuotationController {
   constructor(
     private quotationService: QuotationService,
-    private companyService: CompanyService
+    private companyService: CompanyService,
+    private authRepo: MySqlAuthRepository
   ) {}
 
-  async create(req: Request, res: Response): Promise<void> {
+  async create(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const companySettingsId = req.headers['x-company-id'] as string || 'default';
       const validated = CreateQuotationValidation.parse(req.body);
-
-      const result = await this.quotationService.create(companySettingsId, validated);
+      const currentUser = req.authUser?.id ? await this.authRepo.findById(Number(req.authUser.id)) : null;
+      const result = await this.quotationService.createWithAuthor(companySettingsId, validated, {
+        username: currentUser?.username || req.authUser?.username || 'api',
+        fullName: currentUser?.fullName || req.authUser?.fullName || req.authUser?.username,
+        jobTitle: currentUser?.jobTitle || req.authUser?.jobTitle || ''
+      });
       res.status(201).json(result);
     } catch (err) {
       if (err instanceof ZodError) {
@@ -44,13 +49,17 @@ export class QuotationController {
     }
   }
 
-  async update(req: Request, res: Response): Promise<void> {
+  async update(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { id } = req.params;
       const companySettingsId = req.headers['x-company-id'] as string || 'default';
       const validated = CreateQuotationValidation.parse(req.body);
-
-      const result = await this.quotationService.update(id, companySettingsId, validated);
+      const currentUser = req.authUser?.id ? await this.authRepo.findById(Number(req.authUser.id)) : null;
+      const result = await this.quotationService.updateWithAuthor(id, companySettingsId, validated, {
+        username: currentUser?.username || req.authUser?.username || 'api',
+        fullName: currentUser?.fullName || req.authUser?.fullName || req.authUser?.username,
+        jobTitle: currentUser?.jobTitle || req.authUser?.jobTitle || ''
+      });
       res.json(result);
     } catch (err) {
       if (err instanceof ZodError) {
@@ -205,7 +214,7 @@ export class UserController {
 
   async create(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const { username, email, password, confirmPassword, role = 'admin' } = req.body ?? {};
+      const { username, email, password, confirmPassword, role = 'admin', fullName = '', jobTitle = '' } = req.body ?? {};
 
       if (
         typeof username !== 'string' ||
@@ -219,6 +228,16 @@ export class UserController {
 
       if (!username.trim() || !email.trim()) {
         res.status(400).json({ error: 'Usuario y correo son obligatorios' });
+        return;
+      }
+
+      if (typeof fullName !== 'string' || !fullName.trim()) {
+        res.status(400).json({ error: 'El nombre completo es obligatorio' });
+        return;
+      }
+
+      if (typeof jobTitle !== 'string' || !jobTitle.trim()) {
+        res.status(400).json({ error: 'El puesto es obligatorio' });
         return;
       }
 
@@ -241,7 +260,9 @@ export class UserController {
         username,
         email,
         passwordHash: hashPassword(password),
-        role: role === 'viewer' ? 'viewer' : 'admin'
+        role: role === 'viewer' ? 'viewer' : 'admin',
+        fullName,
+        jobTitle
       });
 
       res.status(201).json({ user });
@@ -252,6 +273,79 @@ export class UserController {
       }
 
       res.status(500).json({ error: 'No fue posible crear el usuario' });
+    }
+  }
+
+  async update(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const id = Number(req.params.id);
+      const {
+        username,
+        email,
+        password = '',
+        confirmPassword = '',
+        role = 'admin',
+        fullName = '',
+        jobTitle = ''
+      } = req.body ?? {};
+
+      if (!id || Number.isNaN(id)) {
+        res.status(400).json({ error: 'Usuario inválido' });
+        return;
+      }
+
+      if (
+        typeof username !== 'string' ||
+        typeof email !== 'string' ||
+        typeof fullName !== 'string' ||
+        typeof jobTitle !== 'string'
+      ) {
+        res.status(400).json({ error: 'Completa todos los datos del usuario' });
+        return;
+      }
+
+      if (!username.trim() || !email.trim() || !fullName.trim() || !jobTitle.trim()) {
+        res.status(400).json({ error: 'Usuario, correo, nombre completo y puesto son obligatorios' });
+        return;
+      }
+
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+        res.status(400).json({ error: 'Correo electrónico inválido' });
+        return;
+      }
+
+      if ((password || confirmPassword) && password !== confirmPassword) {
+        res.status(400).json({ error: 'Las contraseñas no coinciden' });
+        return;
+      }
+
+      if (password && password.length < 8) {
+        res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' });
+        return;
+      }
+
+      const user = await this.authRepo.updateUser(id, {
+        username,
+        email,
+        fullName,
+        jobTitle,
+        role: role === 'viewer' ? 'viewer' : 'admin',
+        passwordHash: password ? hashPassword(password) : undefined
+      });
+
+      res.json({ user });
+    } catch (err: any) {
+      if (err?.code === 'ER_DUP_ENTRY') {
+        res.status(400).json({ error: 'El usuario o correo ya existe' });
+        return;
+      }
+
+      if (err instanceof Error && err.message.includes('no encontrado')) {
+        res.status(404).json({ error: err.message });
+        return;
+      }
+
+      res.status(500).json({ error: 'No fue posible actualizar el usuario' });
     }
   }
 }

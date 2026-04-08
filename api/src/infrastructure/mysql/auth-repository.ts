@@ -8,6 +8,8 @@ export interface AuthUser {
   passwordHash: string;
   role: string;
   isActive: boolean;
+  fullName?: string;
+  jobTitle?: string;
 }
 
 export interface ResetTokenRecord {
@@ -22,6 +24,17 @@ export interface CreateUserInput {
   email: string;
   passwordHash: string;
   role: string;
+  fullName?: string;
+  jobTitle?: string;
+}
+
+export interface UpdateUserInput {
+  username: string;
+  email: string;
+  role: string;
+  fullName?: string;
+  jobTitle?: string;
+  passwordHash?: string;
 }
 
 function createPool(): mysql.Pool {
@@ -54,7 +67,9 @@ function mapAuthUser(row: any): AuthUser {
     email: String(row.email),
     passwordHash: String(row.password_hash),
     role: String(row.role),
-    isActive: Boolean(row.is_active)
+    isActive: Boolean(row.is_active),
+    fullName: row.full_name ? String(row.full_name) : undefined,
+    jobTitle: row.job_title ? String(row.job_title) : undefined
   };
 }
 
@@ -67,6 +82,8 @@ export class MySqlAuthRepository {
         id bigint unsigned NOT NULL AUTO_INCREMENT,
         username varchar(80) NOT NULL,
         email varchar(160) NOT NULL,
+        full_name varchar(160) DEFAULT NULL,
+        job_title varchar(160) DEFAULT NULL,
         password_hash text NOT NULL,
         role varchar(40) NOT NULL DEFAULT 'admin',
         is_active tinyint(1) NOT NULL DEFAULT 1,
@@ -76,6 +93,28 @@ export class MySqlAuthRepository {
         UNIQUE KEY uniq_cotizador_users_username (username),
         UNIQUE KEY uniq_cotizador_users_email (email)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    await db.execute(`
+      ALTER TABLE cotizador_users
+      ADD COLUMN IF NOT EXISTS full_name varchar(160) DEFAULT NULL,
+      ADD COLUMN IF NOT EXISTS job_title varchar(160) DEFAULT NULL
+    `);
+
+    await db.execute(`
+      UPDATE cotizador_users
+      SET
+        full_name = CASE
+          WHEN full_name IS NULL OR TRIM(full_name) = '' THEN username
+          ELSE full_name
+        END,
+        job_title = CASE
+          WHEN job_title IS NULL OR TRIM(job_title) = '' THEN CASE
+            WHEN role = 'viewer' THEN 'Visualizador'
+            ELSE 'Administrador'
+          END
+          ELSE job_title
+        END
     `);
 
     await db.execute(`
@@ -111,12 +150,14 @@ export class MySqlAuthRepository {
 
     await db.execute(
       `
-        INSERT INTO cotizador_users (username, email, password_hash, role, is_active)
-        VALUES (?, ?, ?, 'admin', 1)
+        INSERT INTO cotizador_users (username, email, full_name, job_title, password_hash, role, is_active)
+        VALUES (?, ?, ?, ?, ?, 'admin', 1)
       `,
       [
         config.username.trim().toLowerCase(),
         config.email.trim().toLowerCase(),
+        config.username.trim(),
+        'Administrador',
         hashPassword(config.password)
       ]
     );
@@ -126,9 +167,9 @@ export class MySqlAuthRepository {
     const db = getPool();
     const [rows] = await db.query<any[]>(
       `
-        SELECT id, username, email, role, is_active
+        SELECT id, username, email, full_name, job_title, role, is_active
         FROM cotizador_users
-        ORDER BY username ASC
+        ORDER BY COALESCE(full_name, username) ASC
       `
     );
 
@@ -136,6 +177,8 @@ export class MySqlAuthRepository {
       id: Number(row.id),
       username: String(row.username),
       email: String(row.email),
+      fullName: row.full_name ? String(row.full_name) : undefined,
+      jobTitle: row.job_title ? String(row.job_title) : undefined,
       role: String(row.role),
       isActive: Boolean(row.is_active)
     }));
@@ -145,19 +188,88 @@ export class MySqlAuthRepository {
     const db = getPool();
     const [result] = await db.execute<mysql.ResultSetHeader>(
       `
-        INSERT INTO cotizador_users (username, email, password_hash, role, is_active)
-        VALUES (?, ?, ?, ?, 1)
+        INSERT INTO cotizador_users (username, email, full_name, job_title, password_hash, role, is_active)
+        VALUES (?, ?, ?, ?, ?, ?, 1)
       `,
-      [input.username.trim().toLowerCase(), input.email.trim().toLowerCase(), input.passwordHash, input.role]
+      [
+        input.username.trim().toLowerCase(),
+        input.email.trim().toLowerCase(),
+        input.fullName?.trim() || null,
+        input.jobTitle?.trim() || null,
+        input.passwordHash,
+        input.role
+      ]
     );
 
     return {
       id: Number(result.insertId),
       username: input.username.trim().toLowerCase(),
       email: input.email.trim().toLowerCase(),
+      fullName: input.fullName?.trim() || undefined,
+      jobTitle: input.jobTitle?.trim() || undefined,
       role: input.role,
       isActive: true
     };
+  }
+
+  async updateUser(id: number, input: UpdateUserInput): Promise<Omit<AuthUser, 'passwordHash'>> {
+    const db = getPool();
+    const params: Array<string | null> = [
+      input.username.trim().toLowerCase(),
+      input.email.trim().toLowerCase(),
+      input.fullName?.trim() || null,
+      input.jobTitle?.trim() || null,
+      input.role
+    ];
+
+    let query = `
+      UPDATE cotizador_users
+      SET username = ?, email = ?, full_name = ?, job_title = ?, role = ?
+    `;
+
+    if (input.passwordHash) {
+      query += `, password_hash = ?`;
+      params.push(input.passwordHash);
+    }
+
+    query += ` WHERE id = ?`;
+    params.push(String(id));
+
+    await db.execute(query, params);
+
+    const user = await this.findById(id);
+    if (!user) {
+      throw new Error('Usuario no encontrado');
+    }
+
+    return {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      fullName: user.fullName,
+      jobTitle: user.jobTitle,
+      role: user.role,
+      isActive: user.isActive
+    };
+  }
+
+  async findById(id: number): Promise<AuthUser | null> {
+    const db = getPool();
+    const [rows] = await db.execute<any[]>(
+      `
+        SELECT id, username, email, full_name, job_title, password_hash, role, is_active
+        FROM cotizador_users
+        WHERE id = ?
+        LIMIT 1
+      `,
+      [id]
+    );
+
+    if (!rows.length) {
+      return null;
+    }
+
+    return mapAuthUser(rows[0]);
   }
 
   async findByLogin(login: string): Promise<AuthUser | null> {
@@ -165,7 +277,7 @@ export class MySqlAuthRepository {
     const normalized = login.trim().toLowerCase();
     const [rows] = await db.execute<any[]>(
       `
-        SELECT id, username, email, password_hash, role, is_active
+        SELECT id, username, email, full_name, job_title, password_hash, role, is_active
         FROM cotizador_users
         WHERE username = ? OR email = ?
         LIMIT 1
@@ -185,7 +297,7 @@ export class MySqlAuthRepository {
     const normalized = email.trim().toLowerCase();
     const [rows] = await db.execute<any[]>(
       `
-        SELECT id, username, email, password_hash, role, is_active
+        SELECT id, username, email, full_name, job_title, password_hash, role, is_active
         FROM cotizador_users
         WHERE email = ?
         LIMIT 1

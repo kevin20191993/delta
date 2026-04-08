@@ -27,6 +27,9 @@ class QuotationService {
         return `QT-${year}-${String(maxSequence + 1).padStart(3, '0')}`;
     }
     async create(companySettingsId, data) {
+        return this.createWithAuthor(companySettingsId, data);
+    }
+    async createWithAuthor(companySettingsId, data, author) {
         const resolvedCompanySettingsId = normalizeCompanySettingsId(companySettingsId);
         const safeFolio = (await this.quotationRepo.findByFolio(data.folio))
             ? await this.getNextFolio()
@@ -39,13 +42,15 @@ class QuotationService {
             rfc: data.customerRfc || undefined,
             address: data.customerAddress || undefined,
             logoDataUrl: data.clientLogo || undefined,
-            updatedBy: 'api'
+            updatedBy: author?.username || 'api'
         });
         const subtotal = data.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
         const discountAmount = subtotal * (data.discountPercent / 100);
         const taxable = Math.max(subtotal - discountAmount, 0);
         const taxAmount = taxable * (data.taxPercent / 100);
         const total = taxable + taxAmount;
+        const authorName = author?.fullName?.trim() || author?.username || data.responsibleSignatureName || 'Responsable comercial';
+        const authorJobTitle = author?.jobTitle?.trim() || 'Asesor comercial';
         const quotation = await this.quotationRepo.create({
             folio: safeFolio,
             companySettingsId: resolvedCompanySettingsId,
@@ -66,7 +71,9 @@ class QuotationService {
             hseNotes: data.hseNotes,
             legalNotes: data.legalNotes,
             observations: data.observations,
-            responsibleSignatureName: data.responsibleSignatureName,
+            responsibleSignatureName: authorName,
+            salespersonFullName: authorName,
+            salespersonJobTitle: authorJobTitle,
             showConditions: data.showConditions,
             showHse: data.showHse,
             showLegalNotes: data.showLegalNotes,
@@ -74,7 +81,7 @@ class QuotationService {
             showCustomerAcceptance: data.showCustomerAcceptance,
             showClientLogo: data.showClientLogo,
             status: 'draft',
-            createdBy: 'api'
+            createdBy: author?.username || 'api'
         });
         await this.itemRepo.createBatch(quotation.id, data.items.map((item) => ({
             itemCode: item.itemCode,
@@ -82,7 +89,7 @@ class QuotationService {
             quantity: item.quantity,
             unit: item.unit,
             unitPrice: item.unitPrice
-        })), 'api');
+        })), author?.username || 'api');
         const items = await this.itemRepo.findByQuotationId(quotation.id);
         return { quotation, items, customer };
     }
@@ -116,6 +123,9 @@ class QuotationService {
         await this.quotationRepo.updateStatus(id, status, note, 'api');
     }
     async update(id, companySettingsId, data) {
+        return this.updateWithAuthor(id, companySettingsId, data);
+    }
+    async updateWithAuthor(id, companySettingsId, data, author) {
         const resolvedCompanySettingsId = normalizeCompanySettingsId(companySettingsId);
         const existing = await this.quotationRepo.findById(id);
         if (!existing) {
@@ -133,13 +143,15 @@ class QuotationService {
             rfc: data.customerRfc || undefined,
             address: data.customerAddress || undefined,
             logoDataUrl: data.clientLogo || undefined,
-            updatedBy: 'api'
+            updatedBy: author?.username || 'api'
         });
         const subtotal = data.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
         const discountAmount = subtotal * (data.discountPercent / 100);
         const taxable = Math.max(subtotal - discountAmount, 0);
         const taxAmount = taxable * (data.taxPercent / 100);
         const total = taxable + taxAmount;
+        const authorName = author?.fullName?.trim() || author?.username || existing.salespersonFullName || data.responsibleSignatureName || 'Responsable comercial';
+        const authorJobTitle = author?.jobTitle?.trim() || existing.salespersonJobTitle || 'Asesor comercial';
         const quotation = await this.quotationRepo.update(id, {
             folio: safeFolio,
             companySettingsId: resolvedCompanySettingsId,
@@ -160,14 +172,16 @@ class QuotationService {
             hseNotes: data.hseNotes,
             legalNotes: data.legalNotes,
             observations: data.observations,
-            responsibleSignatureName: data.responsibleSignatureName,
+            responsibleSignatureName: authorName,
+            salespersonFullName: authorName,
+            salespersonJobTitle: authorJobTitle,
             showConditions: data.showConditions,
             showHse: data.showHse,
             showLegalNotes: data.showLegalNotes,
             showResponsibleSignature: data.showResponsibleSignature,
             showCustomerAcceptance: data.showCustomerAcceptance,
             showClientLogo: data.showClientLogo
-        }, 'api');
+        }, author?.username || 'api');
         await this.itemRepo.deleteByQuotationId(id);
         await this.itemRepo.createBatch(id, data.items.map((item) => ({
             itemCode: item.itemCode,
@@ -175,7 +189,7 @@ class QuotationService {
             quantity: item.quantity,
             unit: item.unit,
             unitPrice: item.unitPrice
-        })), 'api');
+        })), author?.username || 'api');
         const items = await this.itemRepo.findByQuotationId(id);
         return { quotation, items, customer };
     }
@@ -201,6 +215,8 @@ class QuotationService {
             legalNotes: original.quotation.legalNotes,
             observations: original.quotation.observations,
             responsibleSignatureName: original.quotation.responsibleSignatureName,
+            salespersonFullName: original.quotation.salespersonFullName,
+            salespersonJobTitle: original.quotation.salespersonJobTitle,
             showConditions: original.quotation.showConditions,
             showHse: original.quotation.showHse,
             showLegalNotes: original.quotation.showLegalNotes,
