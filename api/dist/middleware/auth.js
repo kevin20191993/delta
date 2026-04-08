@@ -19,6 +19,7 @@ function requireAuth(req, res, next) {
             id: decoded.sub || '',
             username: decoded.username || '',
             email: decoded.email || '',
+            phone: decoded.phone || '',
             role: decoded.role || 'admin',
             fullName: decoded.fullName || '',
             jobTitle: decoded.jobTitle || ''

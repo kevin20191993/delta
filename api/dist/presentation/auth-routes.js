@@ -25,6 +25,7 @@ function signToken(user) {
         sub: String(user.id),
         username: user.username,
         email: user.email,
+        phone: user.phone || '',
         role: user.role,
         fullName: user.fullName || '',
         jobTitle: user.jobTitle || ''
@@ -52,6 +53,7 @@ function createAuthRoutes() {
                 token: signToken(user),
                 user: user.username,
                 email: user.email,
+                phone: user.phone || '',
                 role: user.role,
                 fullName: user.fullName || user.username,
                 jobTitle: user.jobTitle || ''

@@ -13,6 +13,7 @@ export default function UsersPage() {
   const [form, setForm] = useState({
     username: '',
     email: '',
+    phone: '',
     fullName: '',
     jobTitle: '',
     password: '',
@@ -62,6 +63,7 @@ export default function UsersPage() {
       setForm({
         username: '',
         email: '',
+        phone: '',
         fullName: '',
         jobTitle: '',
         password: '',
@@ -82,6 +84,7 @@ export default function UsersPage() {
     setForm({
       username: user.username,
       email: user.email,
+      phone: user.phone || '',
       fullName: user.fullName || '',
       jobTitle: user.jobTitle || '',
       password: '',
@@ -97,6 +100,7 @@ export default function UsersPage() {
     setForm({
       username: '',
       email: '',
+      phone: '',
       fullName: '',
       jobTitle: '',
       password: '',
@@ -184,6 +188,15 @@ export default function UsersPage() {
                 />
               </label>
               <label className="block text-sm text-slate">
+                Teléfono
+                <input
+                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-ink outline-none transition focus:border-steel"
+                  value={form.phone}
+                  onChange={(event) => setForm((prev) => ({ ...prev, phone: event.target.value }))}
+                  required
+                />
+              </label>
+              <label className="block text-sm text-slate">
                 Rol
                 <select
                   className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-ink outline-none transition focus:border-steel"
@@ -251,6 +264,7 @@ export default function UsersPage() {
                       <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Nombre completo</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Puesto</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Correo</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Teléfono</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Rol</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Estado</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Acciones</th>
@@ -263,6 +277,7 @@ export default function UsersPage() {
                         <td className="px-4 py-3 text-slate-500">{user.fullName || '-'}</td>
                         <td className="px-4 py-3 text-slate-500">{user.jobTitle || '-'}</td>
                         <td className="px-4 py-3 text-slate-500">{user.email}</td>
+                        <td className="px-4 py-3 text-slate-500">{user.phone || '-'}</td>
                         <td className="px-4 py-3 text-slate-500">{user.role}</td>
                         <td className="px-4 py-3">
                           <span className={`rounded-full px-2 py-1 text-xs font-semibold ${user.isActive ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>

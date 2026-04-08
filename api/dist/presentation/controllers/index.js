@@ -18,7 +18,9 @@ class QuotationController {
             const result = await this.quotationService.createWithAuthor(companySettingsId, validated, {
                 username: currentUser?.username || req.authUser?.username || 'api',
                 fullName: currentUser?.fullName || req.authUser?.fullName || req.authUser?.username,
-                jobTitle: currentUser?.jobTitle || req.authUser?.jobTitle || ''
+                jobTitle: currentUser?.jobTitle || req.authUser?.jobTitle || '',
+                email: currentUser?.email || req.authUser?.email || '',
+                phone: currentUser?.phone || req.authUser?.phone || ''
             });
             res.status(201).json(result);
         }
@@ -58,7 +60,9 @@ class QuotationController {
             const result = await this.quotationService.updateWithAuthor(id, companySettingsId, validated, {
                 username: currentUser?.username || req.authUser?.username || 'api',
                 fullName: currentUser?.fullName || req.authUser?.fullName || req.authUser?.username,
-                jobTitle: currentUser?.jobTitle || req.authUser?.jobTitle || ''
+                jobTitle: currentUser?.jobTitle || req.authUser?.jobTitle || '',
+                email: currentUser?.email || req.authUser?.email || '',
+                phone: currentUser?.phone || req.authUser?.phone || ''
             });
             res.json(result);
         }
@@ -221,7 +225,7 @@ class UserController {
     }
     async create(req, res) {
         try {
-            const { username, email, password, confirmPassword, role = 'admin', fullName = '', jobTitle = '' } = req.body ?? {};
+            const { username, email, phone = '', password, confirmPassword, role = 'admin', fullName = '', jobTitle = '' } = req.body ?? {};
             if (typeof username !== 'string' ||
                 typeof email !== 'string' ||
                 typeof password !== 'string' ||
@@ -239,6 +243,10 @@ class UserController {
             }
             if (typeof jobTitle !== 'string' || !jobTitle.trim()) {
                 res.status(400).json({ error: 'El puesto es obligatorio' });
+                return;
+            }
+            if (typeof phone !== 'string' || !phone.trim()) {
+                res.status(400).json({ error: 'El teléfono es obligatorio' });
                 return;
             }
             if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
@@ -259,7 +267,8 @@ class UserController {
                 passwordHash: (0, password_1.hashPassword)(password),
                 role: role === 'viewer' ? 'viewer' : 'admin',
                 fullName,
-                jobTitle
+                jobTitle,
+                phone
             });
             res.status(201).json({ user });
         }
@@ -274,7 +283,7 @@ class UserController {
     async update(req, res) {
         try {
             const id = Number(req.params.id);
-            const { username, email, password = '', confirmPassword = '', role = 'admin', fullName = '', jobTitle = '' } = req.body ?? {};
+            const { username, email, password = '', confirmPassword = '', role = 'admin', fullName = '', jobTitle = '', phone = '' } = req.body ?? {};
             if (!id || Number.isNaN(id)) {
                 res.status(400).json({ error: 'Usuario inválido' });
                 return;
@@ -282,12 +291,13 @@ class UserController {
             if (typeof username !== 'string' ||
                 typeof email !== 'string' ||
                 typeof fullName !== 'string' ||
-                typeof jobTitle !== 'string') {
+                typeof jobTitle !== 'string' ||
+                typeof phone !== 'string') {
                 res.status(400).json({ error: 'Completa todos los datos del usuario' });
                 return;
             }
-            if (!username.trim() || !email.trim() || !fullName.trim() || !jobTitle.trim()) {
-                res.status(400).json({ error: 'Usuario, correo, nombre completo y puesto son obligatorios' });
+            if (!username.trim() || !email.trim() || !fullName.trim() || !jobTitle.trim() || !phone.trim()) {
+                res.status(400).json({ error: 'Usuario, correo, teléfono, nombre completo y puesto son obligatorios' });
                 return;
             }
             if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
@@ -307,6 +317,7 @@ class UserController {
                 email,
                 fullName,
                 jobTitle,
+                phone,
                 role: role === 'viewer' ? 'viewer' : 'admin',
                 passwordHash: password ? (0, password_1.hashPassword)(password) : undefined
             });

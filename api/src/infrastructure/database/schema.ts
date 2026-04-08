@@ -24,6 +24,8 @@ export async function ensureExtendedQuotationSchema(): Promise<void> {
     ADD COLUMN IF NOT EXISTS show_customer_acceptance boolean DEFAULT true,
     ADD COLUMN IF NOT EXISTS show_client_logo boolean DEFAULT true,
     ADD COLUMN IF NOT EXISTS salesperson_full_name varchar(160),
-    ADD COLUMN IF NOT EXISTS salesperson_job_title varchar(160)
+    ADD COLUMN IF NOT EXISTS salesperson_job_title varchar(160),
+    ADD COLUMN IF NOT EXISTS salesperson_email varchar(160),
+    ADD COLUMN IF NOT EXISTS salesperson_phone varchar(40)
   `);
 }

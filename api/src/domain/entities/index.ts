@@ -22,6 +22,8 @@ export interface Quotation {
   responsibleSignatureName?: string;
   salespersonFullName?: string;
   salespersonJobTitle?: string;
+  salespersonEmail?: string;
+  salespersonPhone?: string;
   showConditions?: boolean;
   showHse?: boolean;
   showLegalNotes?: boolean;

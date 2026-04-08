@@ -39,7 +39,7 @@ export class QuotationService {
   async createWithAuthor(
     companySettingsId: string,
     data: CreateQuotationDTO,
-    author?: { username: string; fullName?: string; jobTitle?: string }
+    author?: { username: string; fullName?: string; jobTitle?: string; email?: string; phone?: string }
   ): Promise<any> {
     const resolvedCompanySettingsId = normalizeCompanySettingsId(companySettingsId);
     const safeFolio = (await this.quotationRepo.findByFolio(data.folio))
@@ -63,6 +63,8 @@ export class QuotationService {
 
     const authorName = author?.fullName?.trim() || author?.username || data.responsibleSignatureName || 'Responsable comercial';
     const authorJobTitle = author?.jobTitle?.trim() || 'Asesor comercial';
+    const authorEmail = author?.email?.trim() || '';
+    const authorPhone = author?.phone?.trim() || '';
 
     const quotation = await this.quotationRepo.create({
       folio: safeFolio,
@@ -87,6 +89,8 @@ export class QuotationService {
       responsibleSignatureName: authorName,
       salespersonFullName: authorName,
       salespersonJobTitle: authorJobTitle,
+      salespersonEmail: authorEmail,
+      salespersonPhone: authorPhone,
       showConditions: data.showConditions,
       showHse: data.showHse,
       showLegalNotes: data.showLegalNotes,
@@ -165,7 +169,7 @@ export class QuotationService {
     id: string,
     companySettingsId: string,
     data: CreateQuotationDTO,
-    author?: { username: string; fullName?: string; jobTitle?: string }
+    author?: { username: string; fullName?: string; jobTitle?: string; email?: string; phone?: string }
   ): Promise<any> {
     const resolvedCompanySettingsId = normalizeCompanySettingsId(companySettingsId);
     const existing = await this.quotationRepo.findById(id);
@@ -198,6 +202,8 @@ export class QuotationService {
 
     const authorName = author?.fullName?.trim() || author?.username || existing.salespersonFullName || data.responsibleSignatureName || 'Responsable comercial';
     const authorJobTitle = author?.jobTitle?.trim() || existing.salespersonJobTitle || 'Asesor comercial';
+    const authorEmail = author?.email?.trim() || existing.salespersonEmail || '';
+    const authorPhone = author?.phone?.trim() || existing.salespersonPhone || '';
 
     const quotation = await this.quotationRepo.update(
       id,
@@ -224,6 +230,8 @@ export class QuotationService {
         responsibleSignatureName: authorName,
         salespersonFullName: authorName,
         salespersonJobTitle: authorJobTitle,
+        salespersonEmail: authorEmail,
+        salespersonPhone: authorPhone,
         showConditions: data.showConditions,
         showHse: data.showHse,
         showLegalNotes: data.showLegalNotes,
@@ -276,6 +284,8 @@ export class QuotationService {
       responsibleSignatureName: original.quotation.responsibleSignatureName,
       salespersonFullName: original.quotation.salespersonFullName,
       salespersonJobTitle: original.quotation.salespersonJobTitle,
+      salespersonEmail: original.quotation.salespersonEmail,
+      salespersonPhone: original.quotation.salespersonPhone,
       showConditions: original.quotation.showConditions,
       showHse: original.quotation.showHse,
       showLegalNotes: original.quotation.showLegalNotes,

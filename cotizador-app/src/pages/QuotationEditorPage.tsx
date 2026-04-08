@@ -67,6 +67,8 @@ function mapApiQuotationToDraft(data: any): QuotationDraft {
     responsibleSignature: data.quotation.responsibleSignatureName ?? data.quotation.responsible_signature_name ?? '',
     salespersonFullName: data.quotation.salespersonFullName ?? data.quotation.salesperson_full_name ?? '',
     salespersonJobTitle: data.quotation.salespersonJobTitle ?? data.quotation.salesperson_job_title ?? '',
+    salespersonEmail: data.quotation.salespersonEmail ?? data.quotation.salesperson_email ?? '',
+    salespersonPhone: data.quotation.salespersonPhone ?? data.quotation.salesperson_phone ?? '',
     showConditions: data.quotation.showConditions ?? data.quotation.show_conditions ?? true,
     showHse: data.quotation.showHse ?? data.quotation.show_hse ?? true,
     showLegalNotes: data.quotation.showLegalNotes ?? data.quotation.show_legal_notes ?? true,
@@ -109,12 +111,14 @@ export default function QuotationEditorPage() {
         ...prev,
         salespersonFullName: sessionUser.fullName || prev.salespersonFullName || sessionUser.username,
         salespersonJobTitle: sessionUser.jobTitle || prev.salespersonJobTitle || 'Asesor comercial',
+        salespersonEmail: sessionUser.email || prev.salespersonEmail || '',
+        salespersonPhone: sessionUser.phone || prev.salespersonPhone || '',
         responsibleSignature: sessionUser.fullName || prev.responsibleSignature || sessionUser.username
       };
       localStorage.setItem(QUOTATION_STORAGE_KEY, JSON.stringify(updated));
       return updated;
     });
-  }, [sessionUser?.fullName, sessionUser?.jobTitle, sessionUser?.username]);
+  }, [sessionUser?.email, sessionUser?.fullName, sessionUser?.jobTitle, sessionUser?.phone, sessionUser?.username]);
 
   useEffect(() => {
     const loadInitialData = async () => {
@@ -338,14 +342,14 @@ export default function QuotationEditorPage() {
 
       if (quotationId) {
         const result = await ApiClient.updateQuotation(quotationId, payload);
-        const savedQuotation = { ...quotation, folio: result.quotation.folio };
+        const savedQuotation = mapApiQuotationToDraft(result);
         setQuotation(savedQuotation);
         localStorage.setItem(QUOTATION_STORAGE_KEY, JSON.stringify(savedQuotation));
         const customerResponse = await ApiClient.listCustomers();
         setCustomers(customerResponse.customers ?? []);
       } else {
         const result = await ApiClient.createQuotation(payload);
-        const savedQuotation = { ...quotation, folio: result.quotation.folio };
+        const savedQuotation = mapApiQuotationToDraft(result);
         setQuotation(savedQuotation);
         setQuotationId(result.quotation.id);
         localStorage.setItem(QUOTATION_ID_KEY, result.quotation.id);
@@ -402,6 +406,8 @@ export default function QuotationEditorPage() {
       responsibleSignature: sessionUser?.fullName || company.technicalLeadName,
       salespersonFullName: sessionUser?.fullName || sessionUser?.username || '',
       salespersonJobTitle: sessionUser?.jobTitle || 'Asesor comercial',
+      salespersonEmail: sessionUser?.email || '',
+      salespersonPhone: sessionUser?.phone || '',
       conditions: company.defaultConditions,
       hseNotes: company.defaultHse,
       legalNotes: company.defaultNotes

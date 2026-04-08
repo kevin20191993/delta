@@ -59,23 +59,14 @@ class PdfService {
         return '';
     }
     renderHtml(data) {
-        const { quotation, items, company, clientLogo, headerImage } = data;
+        const { quotation, items, company, clientLogo } = data;
+        const brandBlue = '#11b7d8';
+        const brandBlueDark = '#0b7898';
+        const companyWebsite = 'https://www.kp-delta-ing-tech.mx/';
         const textBlocks = [
             quotation.showConditions !== false ? { key: 'conditions', title: 'Condiciones', body: quotation.conditions || '-' } : null,
             quotation.showHse !== false ? { key: 'hse', title: 'HSE / Seguridad', body: quotation.hseNotes || '-' } : null,
-            quotation.showLegalNotes !== false ? { key: 'notes', title: 'Notas y validez', body: `${quotation.legalNotes || '-'} | Validez: ${quotation.validityDays} dias.` } : null
-        ].filter(Boolean);
-        const activeSignatures = [
-            quotation.showResponsibleSignature !== false
-                ? {
-                    key: 'responsible',
-                    title: quotation.salespersonFullName || quotation.responsibleSignatureName || 'Responsable comercial',
-                    subtitle: quotation.salespersonJobTitle || 'Asesor comercial'
-                }
-                : null,
-            quotation.showCustomerAcceptance !== false
-                ? { key: 'customer', title: 'Aceptacion Cliente', subtitle: 'Firma y Sello' }
-                : null
+            quotation.showLegalNotes !== false ? { key: 'notes', title: 'Notas', body: quotation.legalNotes || '-' } : null
         ].filter(Boolean);
         const subtotal = items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
         const discountAmount = subtotal * (quotation.discountPercent / 100);
@@ -111,21 +102,12 @@ class PdfService {
         </div>
       `)
             .join('');
-        const signaturesHtml = activeSignatures.length
-            ? `
-      <div class="signatures ${activeSignatures.length === 1 ? 'signatures-single' : ''}">
-        ${activeSignatures
-                .map((signature) => `
-            <div class="signature">
-              <div class="sig-line"></div>
-              <div class="sig-label">${signature.title}</div>
-              <div class="sig-subtitle">${signature.subtitle}</div>
-            </div>
-          `)
-                .join('')}
-      </div>
-    `
-            : '';
+        const companyInitials = company.companyName
+            .split(/\s+/)
+            .filter(Boolean)
+            .slice(0, 2)
+            .map((part) => part.charAt(0).toUpperCase())
+            .join('');
         return `
 <!DOCTYPE html>
 <html lang="es-MX">
@@ -140,89 +122,93 @@ class PdfService {
     .page-break-avoid { break-inside: avoid; page-break-inside: avoid; }
     .page-break-before { break-before: page; page-break-before: always; }
 
-    .hero-header { margin-bottom: 18px; border-radius: 20px; overflow: hidden; border: 1px solid #c9ecff; box-shadow: 0 16px 32px rgba(6, 50, 97, 0.08); }
-    .hero-header img { display: block; width: 100%; height: auto; }
-
-    header { display: grid; grid-template-columns: 1.3fr auto; gap: 20px; margin-bottom: 24px; padding: 18px 22px; background: linear-gradient(135deg, #f6fcff 0%, #edf8ff 45%, #ffffff 100%); border: 1px solid #cbe9ff; border-radius: 22px; }
-    .company-info { display: flex; gap: 15px; }
-    .logo { width: 76px; height: 76px; background: linear-gradient(180deg, #0d4f94 0%, #08264f 100%); border-radius: 18px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 28px; box-shadow: 0 12px 24px rgba(8, 38, 79, 0.18); }
+    .top-line { height: 5px; background: ${brandBlue}; margin-bottom: 24px; }
+    header { display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: 28px; margin-bottom: 22px; }
+    .company-info { display: flex; gap: 14px; }
+    .logo { width: 82px; height: 82px; background: #f3fcfe; border: 1px solid #b9edf6; border-radius: 14px; display: flex; align-items: center; justify-content: center; color: ${brandBlue}; font-weight: 700; font-size: 16px; flex-shrink: 0; }
     .logo img { width: 100%; height: 100%; object-fit: contain; }
-    .company-details h1 { font-size: 24px; font-weight: bold; color: #08264f; margin-bottom: 4px; }
-    .company-details .slogan { font-size: 11px; color: #14b4ff; font-weight: bold; text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 8px; }
-    .company-details p { font-size: 10px; color: #46627d; margin-bottom: 2px; }
+    .brand-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .brand-text { line-height: 1; }
+    .brand-title { font-size: 18px; font-weight: 800; color: #0f172a; letter-spacing: 0.02em; }
+    .brand-subtitle { font-size: 10px; font-weight: 700; color: ${brandBlue}; text-transform: uppercase; letter-spacing: 0.12em; margin-top: 4px; }
+    .company-details p { font-size: 11px; color: #64748b; margin-bottom: 3px; }
+    .company-details p.contact { color: ${brandBlue}; }
 
-    .folios { text-align: right; min-width: 170px; border-radius: 18px; padding: 14px 16px; background: linear-gradient(160deg, #0a2d5a 0%, #124d90 65%, #1db4ff 100%); color: white; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08); }
-    .folios .label { font-size: 9px; text-transform: uppercase; color: rgba(255,255,255,0.68); font-weight: bold; letter-spacing: 1px; margin-bottom: 4px; }
-    .folios .folio { font-size: 22px; font-weight: bold; color: white; margin-bottom: 4px; }
-    .folios .date { font-size: 10px; color: rgba(255,255,255,0.84); }
+    .folio-panel { text-align: left; }
+    .folio-title { font-size: 22px; font-weight: 800; color: #d4d8e1; letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 14px; }
+    .folio-card { border: 1px solid #e7e9ee; background: #fafbfc; padding: 14px 16px; }
+    .folio-row { display: grid; grid-template-columns: 86px 1fr; gap: 8px; font-size: 11px; color: #475569; margin-bottom: 6px; }
+    .folio-row:last-child { margin-bottom: 0; }
+    .folio-row strong { color: #0f172a; }
 
-    .blocks { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 16px; margin-bottom: 20px; break-inside: avoid; page-break-inside: avoid; }
-    .block { padding: 18px; border-radius: 20px; position: relative; overflow: hidden; }
-    .block::before { content: ""; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(12, 78, 147, 0.98) 0%, rgba(8, 38, 79, 0.98) 100%); }
-    .block.client-block::before { background: linear-gradient(135deg, rgba(4, 52, 109, 0.98) 0%, rgba(18, 116, 196, 0.96) 72%, rgba(29, 180, 255, 0.9) 100%); }
-    .block > * { position: relative; z-index: 1; }
-    .block .label { font-size: 9px; text-transform: uppercase; color: #7fdcff; font-weight: bold; letter-spacing: 1.2px; margin-bottom: 8px; }
-    .block .title { font-size: 18px; font-weight: bold; margin-bottom: 6px; color: white; }
-    .block .subtitle { font-size: 12px; color: rgba(255,255,255,0.85); margin-bottom: 4px; }
-    .block .detail { font-size: 10px; color: rgba(255,255,255,0.78); }
+    .meta-grid { border-top: 1px solid #e7e9ee; margin-bottom: 20px; padding-top: 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 28px; break-inside: avoid; page-break-inside: avoid; }
+    .meta-box .label { font-size: 10px; text-transform: uppercase; color: #a0aec0; font-weight: 800; letter-spacing: 0.12em; margin-bottom: 6px; }
+    .meta-box .title { font-size: 18px; font-weight: 800; color: #111827; margin-bottom: 4px; line-height: 1.25; }
+    .meta-box .detail { font-size: 11px; color: #475569; margin-bottom: 2px; }
+    .meta-box .detail strong { color: #0f172a; }
+    .brand-pair { border-top: 1px solid #e7e9ee; margin-bottom: 20px; padding-top: 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 28px; break-inside: avoid; page-break-inside: avoid; }
+    .brand-card { border: 1px solid #d9f4fa; background: #f7fdff; padding: 18px; border-radius: 18px; }
+    .brand-card-head { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
+    .brand-logo-large { width: 86px; height: 86px; border: 1px solid #c9edf4; background: #fff; border-radius: 14px; padding: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .brand-logo-large.client { width: 140px; height: 96px; padding: 10px; }
+    .brand-logo-large img { width: 100%; height: 100%; object-fit: contain; }
+    .client-logo-wrap { margin-top: 0; width: 160px; min-height: 86px; display: flex; align-items: center; justify-content: center; border: 1px solid #c9edf4; background: #fff; padding: 10px 12px; border-radius: 14px; }
+    .client-logo { max-width: 136px; max-height: 62px; width: auto; height: auto; }
 
-    .client-logo-wrap { margin-top: 14px; background: rgba(255,255,255,0.98); border-radius: 18px; padding: 14px 18px; min-height: 112px; display: flex; align-items: center; justify-content: center; box-shadow: 0 14px 26px rgba(4, 25, 58, 0.18); }
-    .client-logo { max-width: 180px; max-height: 76px; width: auto; height: auto; }
-
-    .table-wrap { break-inside: auto; page-break-inside: auto; margin-bottom: 14px; }
-    table { width: 100%; border-collapse: separate; border-spacing: 0; border: 1px solid #d9eefc; border-radius: 18px; overflow: hidden; }
-    thead { background: linear-gradient(90deg, #08264f 0%, #104887 100%); color: white; }
+    .pricing-section { margin-bottom: 20px; }
+    .table-wrap { break-inside: auto; page-break-inside: auto; margin-bottom: 12px; }
+    table { width: 100%; border-collapse: collapse; border-spacing: 0; }
+    thead { background: ${brandBlue}; color: white; }
     thead, tfoot { display: table-header-group; }
-    thead th { padding: 10px; text-align: left; font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
-    tbody td { padding: 8px; border-bottom: 1px solid #e2edf5; font-size: 10px; }
-    tbody tr:nth-child(even) { background: #f7fcff; }
+    thead th { padding: 10px 10px; text-align: left; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: white; border-bottom: 1px solid ${brandBlueDark}; }
+    tbody td { padding: 11px 10px; border-bottom: 1px solid #edf0f4; font-size: 11px; color: #334155; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #fff; }
     tr { break-inside: avoid; page-break-inside: avoid; }
+    .col-id { width: 36px; color: #64748b; }
+    .col-qty, .col-unit { width: 62px; text-align: center; }
+    .col-money { width: 92px; text-align: right; }
+    .amount-strong { font-weight: 800; color: #0f172a; }
     
-    .summary { display: block; margin-bottom: 16px; }
-    .summary-section { break-inside: avoid; page-break-inside: avoid; margin-bottom: 12px; }
-    .conditions { display: block; }
-    .conditions-section { break-inside: avoid; page-break-inside: avoid; }
-    .condition-box { background: linear-gradient(180deg, #ffffff 0%, #f5fbff 100%); border: 1px solid #d7ebfb; border-radius: 16px; padding: 12px 14px; min-height: 68px; width: 100%; box-shadow: 0 8px 18px rgba(15, 72, 136, 0.04); break-inside: avoid; page-break-inside: avoid; }
-    .condition-box .label { font-size: 9px; font-weight: bold; text-transform: uppercase; color: #0d4f94; letter-spacing: 0.7px; margin-bottom: 8px; display: block; }
-    .condition-box p { font-size: 10px; color: #4c647c; line-height: 1.5; white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere; }
+    .closing-section { break-inside: avoid; page-break-inside: avoid; }
+    .summary-layout { margin-bottom: 28px; }
+    .totals-wrap { display: flex; justify-content: flex-end; margin-top: 0; margin-bottom: 24px; break-inside: avoid; page-break-inside: avoid; }
+    .conditions { display: block; padding-top: 16px; border-top: 1px solid #e7e9ee; }
+    .condition-box { break-inside: avoid; page-break-inside: avoid; }
+    .condition-box + .condition-box { margin-top: 16px; }
+    .condition-box .label { font-size: 11px; font-weight: 800; text-transform: uppercase; color: #0f172a; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+    .condition-box .label::before { content: ""; width: 8px; height: 8px; border: 1.5px solid ${brandBlue}; border-radius: 50%; display: inline-block; }
+    .condition-box p { font-size: 11px; color: #475569; line-height: 1.55; white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere; }
 
-    .totals-box { background: linear-gradient(135deg, #081f47 0%, #0d4f94 72%, #12b1ff 100%); color: white; border-radius: 20px; padding: 16px 18px; width: 100%; box-shadow: 0 20px 32px rgba(8, 38, 79, 0.16); break-inside: avoid; page-break-inside: avoid; }
-    .total-row { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 6px; }
-    .total-row .label { color: rgba(255,255,255,0.7); }
-    .total-row .value { font-weight: bold; }
-    
-    .total-divider { border-top: 1px solid rgba(255,255,255,0.15); margin: 10px 0; padding-top: 10px; margin-bottom: 10px; }
-    .total-final { display: flex; align-items: end; justify-content: space-between; gap: 14px; margin-top: 8px; }
-    .total-final .label { font-size: 10px; text-transform: uppercase; color: #98e8ff; font-weight: bold; letter-spacing: 0.5px; display: block; margin-bottom: 6px; }
-    .total-final .amount { font-size: 30px; font-weight: bold; line-height: 1; }
-    
-    .signatures { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 36px; margin-top: 24px; break-inside: avoid; page-break-inside: avoid; }
-    .signatures-single { grid-template-columns: 1fr; justify-items: center; }
-    .signature { text-align: center; width: 100%; max-width: 250px; justify-self: center; break-inside: avoid; page-break-inside: avoid; }
-    .sig-line { border-top: 1px solid #333; width: 140px; margin: 0 auto 6px; }
-    .sig-label { font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
-    .sig-subtitle { font-size: 9px; color: #999; margin-top: 4px; }
+    .totals-box { margin-left: auto; width: 240px; background: #f4fdff; padding: 14px 16px; border: 1px solid #bdebf5; box-shadow: 0 10px 24px rgba(17,183,216,0.10); break-inside: avoid; page-break-inside: avoid; }
+    .total-row { display: flex; justify-content: space-between; gap: 12px; font-size: 11px; color: #475569; margin-bottom: 8px; }
+    .total-row .value { font-weight: 700; color: #0f172a; }
+    .total-divider { border-top: 1px solid #bdebf5; margin: 10px 0 12px; }
+    .total-final-label { font-size: 12px; font-weight: 800; color: ${brandBlue}; line-height: 1.25; margin-bottom: 6px; }
+    .total-final-amount { font-size: 18px; font-weight: 800; color: #0f172a; line-height: 1; }
+    .total-note { font-size: 9px; color: #a0aec0; margin-top: 8px; text-align: right; }
+
+    .executive-card { margin: 24px 0 0; border: 1px solid #d9f4fa; background: #f7fdff; border-radius: 18px; padding: 14px 18px; text-align: center; break-inside: avoid; page-break-inside: avoid; }
+    .executive-name { font-size: 13px; font-weight: 800; color: #0f172a; }
+    .executive-role { font-size: 11px; font-weight: 700; color: ${brandBlue}; margin-top: 2px; }
+    .executive-meta { margin-top: 8px; font-size: 10px; color: #64748b; display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; }
+    .footer-note { margin-top: 26px; border-top: 1px solid #eef2f6; padding-top: 12px; text-align: center; font-size: 9px; color: #c0c7d2; }
 
     @media print {
-      .hero-header,
+      .top-line,
       header,
-      .blocks,
-      .block,
+      .brand-pair,
       .table-wrap,
+      .closing-section,
       .totals-box,
-      .summary-section,
       .condition-box,
-      .signatures,
-      .signature {
+      .executive-card,
+      .footer-note {
         break-inside: avoid !important;
         page-break-inside: avoid !important;
       }
 
-      .summary,
-      .conditions {
-        display: block !important;
-        break-inside: auto;
-        page-break-inside: auto;
+      .totals-box {
+        margin-top: 18px;
       }
     }
     
@@ -230,91 +216,116 @@ class PdfService {
 </head>
 <body>
   <div class="page">
-    ${headerImage ? `<div class="hero-header page-break-avoid"><img src="${headerImage}" alt="Header corporativo"></div>` : ''}
+    <div class="top-line page-break-avoid"></div>
     <header class="page-break-avoid">
       <div class="company-info">
-        <div class="logo">${company.logoDataUrl || company.logoFileId ? `<img src="${company.logoDataUrl || company.logoFileId}" alt="Logo">` : company.companyName.charAt(0).toUpperCase()}</div>
+        <div class="logo">${company.logoDataUrl || company.logoFileId ? `<img src="${company.logoDataUrl || company.logoFileId}" alt="Logo">` : companyInitials || 'KP'}</div>
         <div class="company-details">
-          <h1>${company.companyName}</h1>
-          <div class="slogan">${company.slogan}</div>
+          <div class="brand-row">
+            <div class="brand-text">
+              <div class="brand-title">${company.companyName}</div>
+              <div class="brand-subtitle">${company.slogan || 'Ingenieria y tecnologia'}</div>
+            </div>
+          </div>
+          <p>Soluciones Integrales</p>
           <p>RFC: ${company.rfc}</p>
           <p>${company.address}</p>
-          <p>Tel: ${company.phone} | ${company.email}</p>
         </div>
       </div>
-      <div class="folios">
-        <div class="label">Cotizacion</div>
-        <div class="folio">${quotation.folio}</div>
-        <div class="date">${new Date(quotation.quotationDate).toLocaleDateString('es-MX')}</div>
+      <div class="folio-panel">
+        <div class="folio-title">Cotización</div>
+        <div class="folio-card">
+          <div class="folio-row"><span>Cotización No:</span><strong>${quotation.folio}</strong></div>
+          <div class="folio-row"><span>Fecha:</span><strong>${new Date(quotation.quotationDate).toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' })}</strong></div>
+          <div class="folio-row"><span>Validez:</span><strong>${quotation.validityDays} dias naturales</strong></div>
+        </div>
       </div>
     </header>
 
-    <div class="blocks page-break-avoid">
-      <div class="block">
-        <div class="label">Atencion a</div>
-        <div class="title">${quotation.customerAttention}</div>
-        <div class="subtitle">${quotation.customerContact || ''}</div>
-        <div class="detail">Empresa: ${quotation.destinationCompany}</div>
-      </div>
-      <div class="block client-block">
-        <div class="label">Proyecto / cliente</div>
-        <div class="title">${quotation.projectLocation}</div>
-        <div class="detail">Ejecutivo responsable: ${quotation.salespersonFullName || quotation.responsibleSignatureName || 'Por asignar'}</div>
-        ${quotation.showClientLogo !== false
-            ? (clientLogo ? `<div class="client-logo-wrap"><img src="${clientLogo}" alt="Logo Cliente" class="client-logo"></div>` : '<div class="detail" style="margin-top: 12px;">Sin logo de cliente</div>')
-            : '<div class="detail" style="margin-top: 12px;">Logo del cliente oculto</div>'}
-      </div>
-    </div>
-
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Descripcion tecnica del concepto</th>
-            <th>Cant.</th>
-            <th>Unidad</th>
-            <th>P. Unitario</th>
-            <th>Importe</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${itemsHtml}
-        </tbody>
-      </table>
-    </div>
-
-    <div class="summary">
-      <div class="summary-section">
-      <div class="totals-box">
-        <div class="total-row">
-          <span class="label">Subtotal</span>
-          <span class="value">${formatMoney(subtotal, quotation.currency)}</span>
-        </div>
-        <div class="total-row">
-          <span class="label">Descuento</span>
-          <span class="value">${formatMoney(discountAmount, quotation.currency)}</span>
-        </div>
-        <div class="total-row">
-          <span class="label">IVA (${quotation.taxPercent}%)</span>
-          <span class="value">${formatMoney(taxAmount, quotation.currency)}</span>
-        </div>
-        <div class="total-divider"></div>
-        <div class="total-final">
-          <label class="label">Inversion Total</label>
-          <div class="amount">${formatMoney(total, quotation.currency)}</div>
+    <div class="brand-pair page-break-avoid">
+      <div class="brand-card">
+        <div class="brand-card-head">
+          ${quotation.showClientLogo !== false
+            ? (clientLogo ? `<div class="brand-logo-large client"><img src="${clientLogo}" alt="Logo Cliente" class="client-logo"></div>` : '<div class="client-logo-wrap">Sin logo cliente</div>')
+            : '<div class="client-logo-wrap">Logo cliente oculto</div>'}
+          <div class="meta-box">
+            <div class="label">Preparado para</div>
+            <div class="title">${quotation.destinationCompany}</div>
+            <div class="detail">Atn: <strong>${quotation.customerAttention}</strong></div>
+            ${quotation.customerContact ? `<div class="detail">${quotation.customerContact}</div>` : ''}
+          </div>
         </div>
       </div>
-      </div>
-
-      <div class="conditions">
-        <div class="conditions-section">
-        ${textBlocksHtml}
+      <div class="brand-card">
+        <div class="brand-card-head">
+          <div class="meta-box">
+            <div class="label">Proyecto / cliente</div>
+            <div class="detail">Proyecto: <strong>${quotation.projectLocation}</strong></div>
+            <div class="detail">Ejecutivo a cargo: <strong>${quotation.salespersonFullName || quotation.responsibleSignatureName || 'Por asignar'}</strong></div>
+          </div>
         </div>
       </div>
     </div>
 
-    ${signaturesHtml}
+    <div class="pricing-section">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="col-id">ID</th>
+              <th>Descripcion tecnica del concepto</th>
+              <th class="col-qty">Cant.</th>
+              <th class="col-unit">Unidad</th>
+              <th class="col-money">P. Unitario</th>
+              <th class="col-money">Importe</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemsHtml}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="totals-wrap">
+        <div class="totals-box page-break-avoid">
+          <div class="total-row">
+            <span class="label">Subtotal</span>
+            <span class="value">${formatMoney(subtotal, quotation.currency)}</span>
+          </div>
+          <div class="total-row">
+            <span class="label">Descuento</span>
+            <span class="value">${formatMoney(discountAmount, quotation.currency)}</span>
+          </div>
+          <div class="total-row">
+            <span class="label">IVA (${quotation.taxPercent}%)</span>
+            <span class="value">${formatMoney(taxAmount, quotation.currency)}</span>
+          </div>
+          <div class="total-divider"></div>
+          <div class="total-final-label">Inversión<br>Total</div>
+          <div class="total-final-amount">${formatMoney(total, quotation.currency)}</div>
+          <div class="total-note">* Precios expresados en Moneda Nacional (${quotation.currency})</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="closing-section">
+      <div class="summary-layout">
+        <div class="conditions">
+          ${textBlocksHtml}
+        </div>
+      </div>
+
+      <div class="executive-card">
+        <div class="executive-name">${quotation.salespersonFullName || quotation.responsibleSignatureName || 'Responsable comercial'}</div>
+        <div class="executive-role">${quotation.salespersonJobTitle || 'Asesor comercial'}</div>
+        <div class="executive-meta">
+          <span>${quotation.salespersonEmail || 'Sin correo'}</span>
+          <span>${quotation.salespersonPhone || 'Sin teléfono'}</span>
+          <span>${companyWebsite}</span>
+        </div>
+      </div>
+      <div class="footer-note">Documento generado confidencialmente para uso exclusivo del cliente.</div>
+    </div>
   </div>
 </body>
 </html>

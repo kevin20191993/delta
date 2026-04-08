@@ -30,6 +30,7 @@ function mapAuthUser(row) {
         id: Number(row.id),
         username: String(row.username),
         email: String(row.email),
+        phone: row.phone ? String(row.phone) : undefined,
         passwordHash: String(row.password_hash),
         role: String(row.role),
         isActive: Boolean(row.is_active),
@@ -45,6 +46,7 @@ class MySqlAuthRepository {
         id bigint unsigned NOT NULL AUTO_INCREMENT,
         username varchar(80) NOT NULL,
         email varchar(160) NOT NULL,
+        phone varchar(40) DEFAULT NULL,
         full_name varchar(160) DEFAULT NULL,
         job_title varchar(160) DEFAULT NULL,
         password_hash text NOT NULL,
@@ -59,6 +61,7 @@ class MySqlAuthRepository {
     `);
         await db.execute(`
       ALTER TABLE cotizador_users
+      ADD COLUMN IF NOT EXISTS phone varchar(40) DEFAULT NULL,
       ADD COLUMN IF NOT EXISTS full_name varchar(160) DEFAULT NULL,
       ADD COLUMN IF NOT EXISTS job_title varchar(160) DEFAULT NULL
     `);
@@ -102,11 +105,12 @@ class MySqlAuthRepository {
             return;
         }
         await db.execute(`
-        INSERT INTO cotizador_users (username, email, full_name, job_title, password_hash, role, is_active)
-        VALUES (?, ?, ?, ?, ?, 'admin', 1)
+        INSERT INTO cotizador_users (username, email, phone, full_name, job_title, password_hash, role, is_active)
+        VALUES (?, ?, ?, ?, ?, ?, 'admin', 1)
       `, [
             config.username.trim().toLowerCase(),
             config.email.trim().toLowerCase(),
+            null,
             config.username.trim(),
             'Administrador',
             (0, password_1.hashPassword)(config.password)
@@ -115,7 +119,7 @@ class MySqlAuthRepository {
     async listUsers() {
         const db = getPool();
         const [rows] = await db.query(`
-        SELECT id, username, email, full_name, job_title, role, is_active
+        SELECT id, username, email, phone, full_name, job_title, role, is_active
         FROM cotizador_users
         ORDER BY COALESCE(full_name, username) ASC
       `);
@@ -123,6 +127,7 @@ class MySqlAuthRepository {
             id: Number(row.id),
             username: String(row.username),
             email: String(row.email),
+            phone: row.phone ? String(row.phone) : undefined,
             fullName: row.full_name ? String(row.full_name) : undefined,
             jobTitle: row.job_title ? String(row.job_title) : undefined,
             role: String(row.role),
@@ -132,11 +137,12 @@ class MySqlAuthRepository {
     async createUser(input) {
         const db = getPool();
         const [result] = await db.execute(`
-        INSERT INTO cotizador_users (username, email, full_name, job_title, password_hash, role, is_active)
-        VALUES (?, ?, ?, ?, ?, ?, 1)
+        INSERT INTO cotizador_users (username, email, phone, full_name, job_title, password_hash, role, is_active)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 1)
       `, [
             input.username.trim().toLowerCase(),
             input.email.trim().toLowerCase(),
+            input.phone?.trim() || null,
             input.fullName?.trim() || null,
             input.jobTitle?.trim() || null,
             input.passwordHash,
@@ -146,6 +152,7 @@ class MySqlAuthRepository {
             id: Number(result.insertId),
             username: input.username.trim().toLowerCase(),
             email: input.email.trim().toLowerCase(),
+            phone: input.phone?.trim() || undefined,
             fullName: input.fullName?.trim() || undefined,
             jobTitle: input.jobTitle?.trim() || undefined,
             role: input.role,
@@ -157,13 +164,14 @@ class MySqlAuthRepository {
         const params = [
             input.username.trim().toLowerCase(),
             input.email.trim().toLowerCase(),
+            input.phone?.trim() || null,
             input.fullName?.trim() || null,
             input.jobTitle?.trim() || null,
             input.role
         ];
         let query = `
       UPDATE cotizador_users
-      SET username = ?, email = ?, full_name = ?, job_title = ?, role = ?
+      SET username = ?, email = ?, phone = ?, full_name = ?, job_title = ?, role = ?
     `;
         if (input.passwordHash) {
             query += `, password_hash = ?`;
@@ -180,6 +188,7 @@ class MySqlAuthRepository {
             id: user.id,
             username: user.username,
             email: user.email,
+            phone: user.phone,
             fullName: user.fullName,
             jobTitle: user.jobTitle,
             role: user.role,
@@ -189,7 +198,7 @@ class MySqlAuthRepository {
     async findById(id) {
         const db = getPool();
         const [rows] = await db.execute(`
-        SELECT id, username, email, full_name, job_title, password_hash, role, is_active
+        SELECT id, username, email, phone, full_name, job_title, password_hash, role, is_active
         FROM cotizador_users
         WHERE id = ?
         LIMIT 1
@@ -203,7 +212,7 @@ class MySqlAuthRepository {
         const db = getPool();
         const normalized = login.trim().toLowerCase();
         const [rows] = await db.execute(`
-        SELECT id, username, email, full_name, job_title, password_hash, role, is_active
+        SELECT id, username, email, phone, full_name, job_title, password_hash, role, is_active
         FROM cotizador_users
         WHERE username = ? OR email = ?
         LIMIT 1
@@ -217,7 +226,7 @@ class MySqlAuthRepository {
         const db = getPool();
         const normalized = email.trim().toLowerCase();
         const [rows] = await db.execute(`
-        SELECT id, username, email, full_name, job_title, password_hash, role, is_active
+        SELECT id, username, email, phone, full_name, job_title, password_hash, role, is_active
         FROM cotizador_users
         WHERE email = ?
         LIMIT 1

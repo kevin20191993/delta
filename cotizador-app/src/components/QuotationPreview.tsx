@@ -15,105 +15,117 @@ interface QuotationPreviewProps {
 }
 
 export default function QuotationPreview({ company, quotation, totals }: QuotationPreviewProps) {
-  const headerImage = '/images/header.jpeg';
+  const companyWebsite = 'https://www.kp-delta-ing-tech.mx/';
   const activeTextBlocks = [
     quotation.showConditions ? { key: 'conditions', title: 'Condiciones', body: safeText(quotation.conditions) } : null,
     quotation.showHse ? { key: 'hse', title: 'HSE / seguridad', body: safeText(quotation.hseNotes) } : null,
-    quotation.showLegalNotes ? { key: 'notes', title: 'Notas y validez', body: `${safeText(quotation.legalNotes)} | Validez: ${quotation.validityDays} dias.` } : null
+    quotation.showLegalNotes ? { key: 'notes', title: 'Notas', body: safeText(quotation.legalNotes) } : null
   ].filter(Boolean) as Array<{ key: string; title: string; body: string }>;
 
-  const activeSignatures = [
-    quotation.showResponsibleSignature
-      ? {
-          key: 'responsible',
-          title: safeText(quotation.salespersonFullName || quotation.responsibleSignature),
-          subtitle: safeText(quotation.salespersonJobTitle, 'Asesor comercial'),
-          accent: 'text-[#08264f]'
-        }
-      : null,
-    quotation.showCustomerAcceptance
-      ? { key: 'customer', title: 'Aceptacion de cliente', subtitle: 'Firma y sello', accent: 'text-slate-300' }
-      : null
-  ].filter(Boolean) as Array<{ key: string; title: string; subtitle: string; accent: string }>;
+  const companyInitials = safeText(company.companyName, 'KP')
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join('');
 
   return (
-    <article className="relative overflow-hidden rounded-3xl border border-[#cfe8fb] bg-white p-6 shadow-panel animate-liftIn [animation-delay:120ms]">
-      <div className="mb-5 overflow-hidden rounded-[26px] border border-[#bfe6ff] shadow-[0_18px_36px_rgba(6,50,97,0.08)]">
-        <img src={headerImage} alt="Header corporativo KP Delta" className="block h-auto w-full" />
-      </div>
+    <article className="overflow-hidden rounded-3xl border border-[#e7e9ee] bg-white p-6 shadow-panel animate-liftIn [animation-delay:120ms]">
+      <div className="mb-6 h-1.5 w-full bg-[#11b7d8]" />
 
-      <header className="relative mb-6 grid grid-cols-1 gap-4 rounded-[26px] border border-[#cfe8fb] bg-[linear-gradient(135deg,#f5fcff_0%,#ecf8ff_45%,#ffffff_100%)] p-5 lg:grid-cols-[1.3fr_auto]">
-        <div className="flex items-start gap-4">
-          <div className="flex h-[76px] w-[76px] items-center justify-center overflow-hidden rounded-[20px] bg-[linear-gradient(180deg,#0d4f94_0%,#08264f_100%)] text-2xl font-bold text-white shadow-[0_12px_24px_rgba(8,38,79,0.18)]">
+      <header className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_240px]">
+        <div className="flex items-start gap-3">
+          <div className="flex h-[82px] w-[82px] items-center justify-center overflow-hidden rounded-[14px] border border-[#b9edf6] bg-[#f3fcfe] text-sm font-bold text-white">
             {company.companyLogo ? (
               <img src={company.companyLogo} alt="Logo empresa" className="h-full w-full object-contain" />
             ) : (
-              company.companyName.charAt(0).toUpperCase()
+              companyInitials || 'KP'
             )}
           </div>
           <div>
-            <h1 className="font-display text-3xl tracking-tight text-[#08264f]">{safeText(company.companyName, 'Tu empresa')}</h1>
-            <p className="mt-1 text-sm font-semibold uppercase tracking-[0.18em] text-[#14b4ff]">{safeText(company.slogan, 'Servicios industriales')}</p>
-            <p className="mt-2 text-xs text-slate">RFC: {safeText(company.rfc)} | {safeText(company.address)}</p>
-            <p className="text-xs text-slate">Tel: {safeText(company.phone)} | {safeText(company.email)}</p>
+            <div className="text-xl font-extrabold uppercase tracking-tight text-[#0f172a]">{safeText(company.companyName, 'KP Delta')}</div>
+            <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.16em] text-[#11b7d8]">
+              {safeText(company.slogan, 'Ingenieria y tecnologia')}
+            </p>
+            <div className="mt-3 space-y-1 text-[11px] text-slate-500">
+              <p>Soluciones Integrales</p>
+              <p>RFC: {safeText(company.rfc)}</p>
+              <p>{safeText(company.address)}</p>
+            </div>
           </div>
         </div>
 
-        <div className="text-right rounded-[22px] bg-[linear-gradient(160deg,#0a2d5a_0%,#124d90_65%,#1db4ff_100%)] px-5 py-4 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/70">Cotizacion</p>
-          <p className="text-2xl font-display">{safeText(quotation.folio)}</p>
-          <p className="mt-1 text-xs text-white/80">Fecha: {safeText(quotation.date)}</p>
+        <div>
+          <p className="mb-4 text-right text-[22px] font-extrabold uppercase tracking-[0.16em] text-[#d4d8e1]">Cotización</p>
+          <div className="border border-[#e7e9ee] bg-[#fafbfc] px-4 py-3 text-[11px] text-slate-600">
+            <div className="grid grid-cols-[86px_1fr] gap-2 py-1">
+              <span>Cotización No:</span>
+              <strong className="text-[#0f172a]">{safeText(quotation.folio)}</strong>
+            </div>
+            <div className="grid grid-cols-[86px_1fr] gap-2 py-1">
+              <span>Fecha:</span>
+              <strong className="text-[#0f172a]">{safeText(quotation.date)}</strong>
+            </div>
+            <div className="grid grid-cols-[86px_1fr] gap-2 py-1">
+              <span>Validez:</span>
+              <strong className="text-[#0f172a]">{quotation.validityDays} dias naturales</strong>
+            </div>
+          </div>
         </div>
       </header>
 
-      <section className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-[1.05fr_0.95fr]">
-        <div className="overflow-hidden rounded-[22px] bg-[linear-gradient(135deg,#0c4e93_0%,#08264f_100%)] p-5 text-white shadow-[0_18px_32px_rgba(8,38,79,0.14)]">
-          <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#7fdcff]">Atencion a</p>
-          <p className="text-2xl font-display">{safeText(quotation.customerName)}</p>
-          <p className="text-sm text-slate-200">{safeText(quotation.customerContact)}</p>
-          <p className="mt-2 text-xs text-slate-300">Empresa: {safeText(quotation.destinationCompany)}</p>
-        </div>
-        <div className="overflow-hidden rounded-[22px] bg-[linear-gradient(135deg,#04346d_0%,#1274c4_72%,#1db4ff_100%)] p-5 text-white shadow-[0_18px_32px_rgba(8,38,79,0.14)]">
-          <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#d8f6ff]">Proyecto / cliente</p>
-          <p className="text-2xl font-display">{safeText(quotation.projectLocation)}</p>
-          <p className="mt-2 text-xs text-white/80">
-            Ejecutivo responsable: {safeText(quotation.salespersonFullName || quotation.responsibleSignature)}
-          </p>
-          {quotation.showClientLogo && quotation.clientLogo ? (
-            <div className="mt-4 flex min-h-[110px] items-center justify-center rounded-[18px] bg-white p-4 shadow-[0_14px_26px_rgba(4,25,58,0.18)]">
-              <img src={quotation.clientLogo} alt="Logo cliente" className="max-h-[76px] w-auto object-contain" />
+      <section className="mb-6 grid grid-cols-1 gap-6 border-t border-[#e7e9ee] pt-5 lg:grid-cols-2">
+        <div className="rounded-[18px] border border-[#d9f4fa] bg-[#f7fdff] p-5">
+          <div className="mb-4 flex items-center gap-4">
+            <div className="flex h-[96px] w-[140px] items-center justify-center overflow-hidden rounded-[14px] border border-[#c9edf4] bg-white p-3">
+              {quotation.showClientLogo && quotation.clientLogo ? (
+                <img src={quotation.clientLogo} alt="Logo cliente" className="h-full w-full object-contain" />
+              ) : (
+                <span className="text-sm font-bold text-slate-400">Sin logo cliente</span>
+              )}
             </div>
-          ) : (
-            <p className="mt-3 text-xs text-white/75">
-              {quotation.showClientLogo ? 'Sin logo de cliente.' : 'Logo del cliente oculto.'}
-            </p>
-          )}
+            <div>
+              <p className="mb-2 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#8fa4b0]">Preparado para</p>
+              <p className="text-[18px] font-extrabold leading-tight text-[#111827]">{safeText(quotation.destinationCompany)}</p>
+              <p className="mt-1 text-[11px] text-slate-600">Atn: <strong className="text-[#0f172a]">{safeText(quotation.customerName)}</strong></p>
+              {quotation.customerContact ? <p className="text-[11px] text-slate-600">{safeText(quotation.customerContact)}</p> : null}
+            </div>
+          </div>
+        </div>
+        <div className="rounded-[18px] border border-[#d9f4fa] bg-[#f7fdff] p-5">
+          <div className="mb-4 flex items-center gap-4">
+            <div className="min-w-0">
+              <p className="mb-2 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#8fa4b0]">Proyecto / cliente</p>
+              <p className="text-[14px] font-extrabold text-[#111827]">{safeText(quotation.projectLocation)}</p>
+              <p className="mt-1 text-[11px] text-slate-600">Ejecutivo a cargo: <strong className="text-[#0f172a]">{safeText(quotation.salespersonFullName || quotation.responsibleSignature)}</strong></p>
+            </div>
+          </div>
         </div>
       </section>
 
-      <section className="mb-6 overflow-hidden rounded-[22px] border border-[#d9eefc]">
-        <table className="w-full text-sm">
+      <section className="mb-6">
+        <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="bg-[linear-gradient(90deg,#08264f_0%,#104887_100%)] text-left text-white">
-              <th className="px-3 py-2">ID</th>
-              <th className="px-3 py-2">Descripcion tecnica del concepto</th>
-              <th className="px-3 py-2">Cant.</th>
-              <th className="px-3 py-2">Unidad</th>
-              <th className="px-3 py-2">P. Unitario</th>
-              <th className="px-3 py-2 text-right">Importe</th>
+            <tr className="bg-[#11b7d8] text-left text-white">
+              <th className="w-[36px] border-b border-[#0ea0bd] px-3 py-2 text-[10px] font-extrabold uppercase tracking-[0.05em]">ID</th>
+              <th className="border-b border-[#0ea0bd] px-3 py-2 text-[10px] font-extrabold uppercase tracking-[0.05em]">Descripción técnica del concepto</th>
+              <th className="w-[62px] border-b border-[#0ea0bd] px-3 py-2 text-center text-[10px] font-extrabold uppercase tracking-[0.05em]">Cant.</th>
+              <th className="w-[62px] border-b border-[#0ea0bd] px-3 py-2 text-center text-[10px] font-extrabold uppercase tracking-[0.05em]">Unidad</th>
+              <th className="w-[92px] border-b border-[#0ea0bd] px-3 py-2 text-right text-[10px] font-extrabold uppercase tracking-[0.05em]">P. Unitario</th>
+              <th className="w-[92px] border-b border-[#0ea0bd] px-3 py-2 text-right text-[10px] font-extrabold uppercase tracking-[0.05em]">Importe</th>
             </tr>
           </thead>
           <tbody>
             {quotation.items.map((item, index) => {
               const amount = item.quantity * item.unitPrice;
               return (
-                <tr key={`${item.id}-${index}`} className="border-b border-slate-100 last:border-b-0">
-                  <td className="px-3 py-2 font-semibold text-slate">{safeText(item.id)}</td>
-                  <td className="px-3 py-2 text-ink">{safeText(item.description)}</td>
-                  <td className="px-3 py-2">{item.quantity}</td>
-                  <td className="px-3 py-2">{safeText(item.unit)}</td>
-                  <td className="px-3 py-2">{toMoney(item.unitPrice, quotation.currency)}</td>
-                  <td className="px-3 py-2 text-right font-semibold">{toMoney(amount, quotation.currency)}</td>
+                <tr key={`${item.id}-${index}`} className="border-b border-[#edf0f4] align-top">
+                  <td className="px-3 py-3 text-[11px] text-slate-500">{safeText(item.id)}</td>
+                  <td className="px-3 py-3 text-[11px] text-[#334155]">{safeText(item.description)}</td>
+                  <td className="px-3 py-3 text-center text-[11px] text-[#334155]">{item.quantity}</td>
+                  <td className="px-3 py-3 text-center text-[11px] text-[#334155]">{safeText(item.unit)}</td>
+                  <td className="px-3 py-3 text-right text-[11px] text-[#334155]">{toMoney(item.unitPrice, quotation.currency)}</td>
+                  <td className="px-3 py-3 text-right text-[11px] font-extrabold text-[#0f172a]">{toMoney(amount, quotation.currency)}</td>
                 </tr>
               );
             })}
@@ -121,55 +133,56 @@ export default function QuotationPreview({ company, quotation, totals }: Quotati
         </table>
       </section>
 
-      <section className="space-y-4">
-        <aside className="rounded-3xl bg-[linear-gradient(135deg,#081f47_0%,#0d4f94_72%,#12b1ff_100%)] p-4 text-white shadow-[0_20px_32px_rgba(8,38,79,0.16)]">
-          <div className="space-y-2 border-b border-white/10 pb-3">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-300">Subtotal</span>
-              <strong>{toMoney(totals.subtotal, quotation.currency)}</strong>
+      <section>
+        <div className="mb-6 flex justify-end">
+          <aside className="w-full max-w-[240px] border border-[#bdebf5] bg-[#f4fdff] p-4 shadow-[0_10px_24px_rgba(17,183,216,0.10)]">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-[11px] text-slate-600">
+                <span>Subtotal</span>
+                <strong className="text-[#0f172a]">{toMoney(totals.subtotal, quotation.currency)}</strong>
+              </div>
+              <div className="flex items-center justify-between text-[11px] text-slate-600">
+                <span>Descuento</span>
+                <strong className="text-[#0f172a]">{toMoney(totals.discountAmount, quotation.currency)}</strong>
+              </div>
+              <div className="flex items-center justify-between text-[11px] text-slate-600">
+                <span>IVA ({company.taxPercent}%)</span>
+                <strong className="text-[#0f172a]">{toMoney(totals.taxAmount, quotation.currency)}</strong>
+              </div>
             </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-300">Descuento</span>
-              <strong>{toMoney(totals.discountAmount, quotation.currency)}</strong>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-300">IVA ({company.taxPercent}%)</span>
-              <strong>{toMoney(totals.taxAmount, quotation.currency)}</strong>
-            </div>
-          </div>
-          <div className="mt-4 flex items-end justify-between gap-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#98e8ff]">Inversion total</p>
-            <p className="font-display text-4xl tracking-tight">{toMoney(totals.total, quotation.currency)}</p>
-          </div>
-        </aside>
+            <div className="my-3 border-t border-[#bdebf5]" />
+            <p className="mb-1 text-[12px] font-extrabold leading-5 text-[#11b7d8]">Inversión<br />Total</p>
+            <p className="text-[18px] font-extrabold text-[#0f172a]">{toMoney(totals.total, quotation.currency)}</p>
+            <p className="mt-2 text-right text-[9px] text-slate-400">* Precios expresados en Moneda Nacional ({quotation.currency})</p>
+          </aside>
+        </div>
 
-        <div className="space-y-3">
-          {activeTextBlocks.length > 0 && (
-            <div className="grid grid-cols-1 gap-3">
-              {activeTextBlocks.map((block) => (
-                <div
-                  key={block.key}
-                  className="rounded-2xl border border-[#d7ebfb] bg-[linear-gradient(180deg,#ffffff_0%,#f5fbff_100%)] p-4 shadow-[0_8px_18px_rgba(15,72,136,0.04)]"
-                >
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-[#0d4f94]">{block.title}</p>
-                  <p className="min-h-16 whitespace-pre-wrap break-words text-sm leading-6 text-slate">{block.body}</p>
-                </div>
-              ))}
+        <div className="space-y-4 border-t border-[#e7e9ee] pt-5">
+          <div className="space-y-2">
+            {activeTextBlocks.map((block) => (
+              <div key={block.key}>
+                <p className="mb-3 flex items-center gap-2 text-[11px] font-extrabold uppercase text-[#0f172a]">
+                  <span className="inline-block h-2 w-2 rounded-full border border-[#11b7d8]" />
+                  {block.title}
+                </p>
+                <p className="whitespace-pre-wrap break-words text-[11px] leading-6 text-slate-600">{block.body}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="rounded-2xl border border-[#d9f4fa] bg-[#f7fdff] px-5 py-4 text-center">
+            <p className="text-[13px] font-extrabold text-[#0f172a]">{safeText(quotation.salespersonFullName || quotation.responsibleSignature)}</p>
+            <p className="text-[11px] font-bold text-[#11b7d8]">{safeText(quotation.salespersonJobTitle, 'Asesor comercial')}</p>
+            <div className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[10px] text-slate-500">
+              <span>{safeText(quotation.salespersonEmail, 'Sin correo')}</span>
+              <span>{safeText(quotation.salespersonPhone, 'Sin teléfono')}</span>
+              <span>{companyWebsite}</span>
             </div>
-          )}
-          {activeSignatures.length > 0 && (
-            <div className={`grid gap-6 pt-4 ${activeSignatures.length === 1 ? 'grid-cols-1 justify-items-center' : 'grid-cols-2'}`}>
-              {activeSignatures.map((signature) => (
-                <div key={signature.key} className="w-full max-w-xs text-center">
-                  <div className="mx-auto mb-2 h-px w-40 bg-slate-300" />
-                  <p className={`text-sm font-semibold ${signature.accent}`}>{signature.title}</p>
-                  <p className={`text-xs uppercase tracking-[0.1em] ${signature.key === 'customer' ? 'text-slate-300' : 'text-slate'}`}>
-                    {signature.subtitle}
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
+          </div>
+
+          <div className="border-t border-[#eef2f6] pt-3 text-center text-[9px] text-[#c0c7d2]">
+            Documento generado confidencialmente para uso exclusivo del cliente.
+          </div>
         </div>
       </section>
     </article>

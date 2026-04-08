@@ -6,6 +6,7 @@ export interface AuthenticatedRequest extends Request {
     id: string;
     username: string;
     email: string;
+    phone?: string;
     role: string;
     fullName?: string;
     jobTitle?: string;
@@ -26,6 +27,7 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
       sub?: string;
       username?: string;
       email?: string;
+      phone?: string;
       role?: string;
       fullName?: string;
       jobTitle?: string;
@@ -34,6 +36,7 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
       id: decoded.sub || '',
       username: decoded.username || '',
       email: decoded.email || '',
+      phone: decoded.phone || '',
       role: decoded.role || 'admin',
       fullName: decoded.fullName || '',
       jobTitle: decoded.jobTitle || ''

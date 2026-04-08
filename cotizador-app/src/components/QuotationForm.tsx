@@ -102,16 +102,16 @@ export default function QuotationForm({
             <input type="date" className={fieldClass} value={quotation.date} onChange={(e) => onQuotationField('date', e.target.value)} />
           </label>
           <label className="text-sm text-slate">
-            Cliente / atencion a
+            Cliente / empresa
+            <input list="customer-company-options" className={fieldClass} value={quotation.destinationCompany} onChange={(e) => onQuotationField('destinationCompany', e.target.value)} />
+          </label>
+          <label className="text-sm text-slate">
+            Atencion a
             <input className={fieldClass} value={quotation.customerName} onChange={(e) => onQuotationField('customerName', e.target.value)} />
           </label>
           <label className="text-sm text-slate">
             Contacto / responsable
             <input className={fieldClass} value={quotation.customerContact} onChange={(e) => onQuotationField('customerContact', e.target.value)} />
-          </label>
-          <label className="text-sm text-slate">
-            Empresa destino
-            <input list="customer-company-options" className={fieldClass} value={quotation.destinationCompany} onChange={(e) => onQuotationField('destinationCompany', e.target.value)} />
           </label>
           <label className="text-sm text-slate">
             Proyecto / ubicacion

@@ -17,7 +17,7 @@ function getBaseUrl(req: Request): string {
   return `${protocol}://${host}`;
 }
 
-function signToken(user: { id: string | number; username: string; email: string; role: string; fullName?: string; jobTitle?: string }): string {
+function signToken(user: { id: string | number; username: string; email: string; phone?: string; role: string; fullName?: string; jobTitle?: string }): string {
   const secret = process.env.JWT_SECRET || 'changeme-set-jwt-secret-in-env';
 
   return jwt.sign(
@@ -25,6 +25,7 @@ function signToken(user: { id: string | number; username: string; email: string;
       sub: String(user.id),
       username: user.username,
       email: user.email,
+      phone: user.phone || '',
       role: user.role,
       fullName: user.fullName || '',
       jobTitle: user.jobTitle || ''
@@ -63,6 +64,7 @@ export function createAuthRoutes(): Router {
         token: signToken(user),
         user: user.username,
         email: user.email,
+        phone: user.phone || '',
         role: user.role,
         fullName: user.fullName || user.username,
         jobTitle: user.jobTitle || ''

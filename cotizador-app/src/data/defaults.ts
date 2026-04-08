@@ -41,6 +41,8 @@ export const createDefaultQuotation = (): QuotationDraft => ({
   responsibleSignature: defaultCompanySettings.technicalLeadName,
   salespersonFullName: '',
   salespersonJobTitle: '',
+  salespersonEmail: '',
+  salespersonPhone: '',
   showConditions: true,
   showHse: true,
   showLegalNotes: true,
