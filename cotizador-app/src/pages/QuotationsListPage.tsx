@@ -10,6 +10,9 @@ interface QuotationSummary {
   status: QuotationStatus;
   destinationCompany: string;
   customerAttention: string;
+  salespersonFullName: string;
+  salespersonJobTitle: string;
+  createdBy: string;
   quotationDate: string;
   currency: string;
   total?: number;
@@ -54,6 +57,14 @@ export default function QuotationsListPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [exportingId, setExportingId] = useState<string | null>(null);
   const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null);
+  const [columnFilters, setColumnFilters] = useState({
+    folio: '',
+    destinationCompany: '',
+    customerAttention: '',
+    salesperson: '',
+    date: '',
+    total: ''
+  });
 
   const loadQuotations = async () => {
     setLoading(true);
@@ -69,6 +80,9 @@ export default function QuotationsListPage() {
         status: entry.quotation?.status ?? entry.status,
         destinationCompany: entry.quotation?.destinationCompany ?? entry.destinationCompany ?? entry.destination_company ?? '',
         customerAttention: entry.quotation?.customerAttention ?? entry.customerAttention ?? entry.customer_attention ?? '',
+        salespersonFullName: entry.quotation?.salespersonFullName ?? entry.salespersonFullName ?? entry.salesperson_full_name ?? '',
+        salespersonJobTitle: entry.quotation?.salespersonJobTitle ?? entry.salespersonJobTitle ?? entry.salesperson_job_title ?? '',
+        createdBy: entry.quotation?.createdBy ?? entry.createdBy ?? entry.created_by ?? '',
         quotationDate: entry.quotation?.quotationDate ?? entry.quotationDate ?? entry.quotation_date ?? '',
         currency: entry.quotation?.currency ?? entry.currency ?? 'MXN',
         total: Number(entry.quotation?.total ?? entry.total ?? entry.total_amount ?? 0),
@@ -85,6 +99,25 @@ export default function QuotationsListPage() {
   useEffect(() => {
     loadQuotations();
   }, [filterStatus]);
+
+  const filteredQuotations = quotations.filter((q) => {
+    const salespersonText = `${q.salespersonFullName} ${q.salespersonJobTitle} ${q.createdBy}`.toLowerCase();
+    const dateText = formatDate(q.quotationDate).toLowerCase();
+    const totalText = formatCurrency(q.total, q.currency).toLowerCase();
+
+    return (
+      q.folio.toLowerCase().includes(columnFilters.folio.toLowerCase()) &&
+      q.destinationCompany.toLowerCase().includes(columnFilters.destinationCompany.toLowerCase()) &&
+      q.customerAttention.toLowerCase().includes(columnFilters.customerAttention.toLowerCase()) &&
+      salespersonText.includes(columnFilters.salesperson.toLowerCase()) &&
+      dateText.includes(columnFilters.date.toLowerCase()) &&
+      totalText.includes(columnFilters.total.toLowerCase())
+    );
+  });
+
+  const handleColumnFilterChange = (key: keyof typeof columnFilters, value: string) => {
+    setColumnFilters((prev) => ({ ...prev, [key]: value }));
+  };
 
   const handleLogout = () => {
     clearToken();
@@ -229,9 +262,9 @@ export default function QuotationsListPage() {
             </div>
           )}
 
-          {!loading && !error && quotations.length === 0 && (
+          {!loading && !error && filteredQuotations.length === 0 && (
             <div className="flex flex-col items-center justify-center py-20 text-center">
-              <p className="text-slate-400 text-sm mb-4">No hay cotizaciones{filterStatus ? ' con ese estado' : ''}.</p>
+              <p className="text-slate-400 text-sm mb-4">No hay cotizaciones{filterStatus ? ' con ese estado' : ''} con esos filtros.</p>
               <button
                 type="button"
                 onClick={handleNewQuotation}
@@ -242,7 +275,7 @@ export default function QuotationsListPage() {
             </div>
           )}
 
-          {!loading && quotations.length > 0 && (
+          {!loading && filteredQuotations.length > 0 && (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -252,6 +285,9 @@ export default function QuotationsListPage() {
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                       Empresa / Cliente
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Ejecutivo / Usuario
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                       Fecha
@@ -266,9 +302,69 @@ export default function QuotationsListPage() {
                       Acciones
                     </th>
                   </tr>
+                  <tr className="border-b border-slate-200 bg-white">
+                    <th className="px-4 py-2">
+                      <input
+                        value={columnFilters.folio}
+                        onChange={(e) => handleColumnFilterChange('folio', e.target.value)}
+                        placeholder="Filtrar folio"
+                        className="w-full rounded-md border border-slate-200 px-2 py-1 text-xs text-slate-600 outline-none focus:border-steel"
+                      />
+                    </th>
+                    <th className="px-4 py-2">
+                      <div className="grid gap-2">
+                        <input
+                          value={columnFilters.destinationCompany}
+                          onChange={(e) => handleColumnFilterChange('destinationCompany', e.target.value)}
+                          placeholder="Filtrar empresa"
+                          className="w-full rounded-md border border-slate-200 px-2 py-1 text-xs text-slate-600 outline-none focus:border-steel"
+                        />
+                        <input
+                          value={columnFilters.customerAttention}
+                          onChange={(e) => handleColumnFilterChange('customerAttention', e.target.value)}
+                          placeholder="Filtrar atención"
+                          className="w-full rounded-md border border-slate-200 px-2 py-1 text-xs text-slate-600 outline-none focus:border-steel"
+                        />
+                      </div>
+                    </th>
+                    <th className="px-4 py-2">
+                      <input
+                        value={columnFilters.salesperson}
+                        onChange={(e) => handleColumnFilterChange('salesperson', e.target.value)}
+                        placeholder="Filtrar ejecutivo"
+                        className="w-full rounded-md border border-slate-200 px-2 py-1 text-xs text-slate-600 outline-none focus:border-steel"
+                      />
+                    </th>
+                    <th className="px-4 py-2">
+                      <input
+                        value={columnFilters.date}
+                        onChange={(e) => handleColumnFilterChange('date', e.target.value)}
+                        placeholder="Filtrar fecha"
+                        className="w-full rounded-md border border-slate-200 px-2 py-1 text-xs text-slate-600 outline-none focus:border-steel"
+                      />
+                    </th>
+                    <th className="px-4 py-2" />
+                    <th className="px-4 py-2">
+                      <input
+                        value={columnFilters.total}
+                        onChange={(e) => handleColumnFilterChange('total', e.target.value)}
+                        placeholder="Filtrar total"
+                        className="w-full rounded-md border border-slate-200 px-2 py-1 text-xs text-slate-600 outline-none focus:border-steel"
+                      />
+                    </th>
+                    <th className="px-4 py-2 text-center">
+                      <button
+                        type="button"
+                        onClick={() => setColumnFilters({ folio: '', destinationCompany: '', customerAttention: '', salesperson: '', date: '', total: '' })}
+                        className="rounded-md border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+                      >
+                        Limpiar
+                      </button>
+                    </th>
+                  </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {quotations.map((q) => (
+                  {filteredQuotations.map((q) => (
                     <tr key={q.id} className="hover:bg-slate-50/60 transition">
                       <td className="px-4 py-3 font-mono text-xs font-semibold text-ink">
                         {q.folio}
@@ -277,6 +373,12 @@ export default function QuotationsListPage() {
                         <p className="font-medium text-ink">{q.destinationCompany || '—'}</p>
                         {q.customerAttention && (
                           <p className="text-xs text-slate-400">Att: {q.customerAttention}</p>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <p className="font-medium text-ink">{q.salespersonFullName || q.createdBy || '—'}</p>
+                        {q.salespersonJobTitle && (
+                          <p className="text-xs text-slate-400">{q.salespersonJobTitle}</p>
                         )}
                       </td>
                       <td className="px-4 py-3 text-slate-500">
@@ -337,7 +439,7 @@ export default function QuotationsListPage() {
         </div>
 
         <p className="mt-4 text-center text-xs text-slate-400">
-          {quotations.length} cotización{quotations.length !== 1 ? 'es' : ''} registrada{quotations.length !== 1 ? 's' : ''}
+          {filteredQuotations.length} cotización{filteredQuotations.length !== 1 ? 'es' : ''} registrada{filteredQuotations.length !== 1 ? 's' : ''}
         </p>
       </div>
     </div>
