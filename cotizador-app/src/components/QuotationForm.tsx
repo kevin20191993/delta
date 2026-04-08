@@ -17,9 +17,9 @@ const fieldClass =
 const visibilityOptions: Array<{ key: keyof Pick<QuotationDraft, 'showConditions' | 'showHse' | 'showLegalNotes' | 'showResponsibleSignature' | 'showCustomerAcceptance' | 'showClientLogo'>; label: string }> = [
   { key: 'showConditions', label: 'Mostrar condiciones' },
   { key: 'showHse', label: 'Mostrar HSE / seguridad' },
-  { key: 'showLegalNotes', label: 'Mostrar notas y validez' },
+  { key: 'showLegalNotes', label: 'Mostrar notas' },
   { key: 'showResponsibleSignature', label: 'Mostrar firma responsable' },
-  { key: 'showCustomerAcceptance', label: 'Mostrar aceptacion de cliente' },
+  { key: 'showCustomerAcceptance', label: 'Mostrar aceptación de cliente' },
   { key: 'showClientLogo', label: 'Mostrar logo del cliente' }
 ];
 
@@ -40,7 +40,7 @@ export default function QuotationForm({
     <div className="space-y-5">
       <section className={`${panelClass} animate-liftIn`}>
         <div className="mb-4">
-          <h2 className="font-display text-xl text-ink">Configuracion corporativa</h2>
+          <h2 className="font-display text-xl text-ink">Configuración corporativa</h2>
           <p className="text-sm text-slate">Logo global y datos de tu empresa para todas las cotizaciones.</p>
         </div>
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
@@ -53,7 +53,7 @@ export default function QuotationForm({
             <input className={fieldClass} value={company.rfc} onChange={(e) => onCompanyField('rfc', e.target.value)} />
           </label>
           <label className="text-sm text-slate lg:col-span-2">
-            Razon social
+            Razón social
             <input className={fieldClass} value={company.legalName} onChange={(e) => onCompanyField('legalName', e.target.value)} />
           </label>
           <label className="text-sm text-slate lg:col-span-2">
@@ -61,11 +61,11 @@ export default function QuotationForm({
             <input className={fieldClass} value={company.slogan} onChange={(e) => onCompanyField('slogan', e.target.value)} />
           </label>
           <label className="text-sm text-slate lg:col-span-2">
-            Direccion
+            Dirección
             <input className={fieldClass} value={company.address} onChange={(e) => onCompanyField('address', e.target.value)} />
           </label>
           <label className="text-sm text-slate">
-            Telefono
+            Teléfono
             <input className={fieldClass} value={company.phone} onChange={(e) => onCompanyField('phone', e.target.value)} />
           </label>
           <label className="text-sm text-slate">
@@ -73,7 +73,7 @@ export default function QuotationForm({
             <input type="email" className={fieldClass} value={company.email} onChange={(e) => onCompanyField('email', e.target.value)} />
           </label>
           <label className="text-sm text-slate">
-            Responsable tecnico
+            Responsable técnico
             <input className={fieldClass} value={company.technicalLeadName} onChange={(e) => onCompanyField('technicalLeadName', e.target.value)} />
           </label>
           <label className="text-sm text-slate">
@@ -89,8 +89,8 @@ export default function QuotationForm({
 
       <section className={`${panelClass} animate-liftIn [animation-delay:40ms]`}>
         <div className="mb-4">
-          <h2 className="font-display text-xl text-ink">Datos de cotizacion</h2>
-          <p className="text-sm text-slate">Informacion comercial, cliente y parametros del documento.</p>
+          <h2 className="font-display text-xl text-ink">Datos de cotización</h2>
+          <p className="text-sm text-slate">Información comercial, cliente y parámetros del documento.</p>
         </div>
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
           <label className="text-sm text-slate">
@@ -106,7 +106,7 @@ export default function QuotationForm({
             <input list="customer-company-options" className={fieldClass} value={quotation.destinationCompany} onChange={(e) => onQuotationField('destinationCompany', e.target.value)} />
           </label>
           <label className="text-sm text-slate">
-            Atencion a
+            Atención a
             <input className={fieldClass} value={quotation.customerName} onChange={(e) => onQuotationField('customerName', e.target.value)} />
           </label>
           <label className="text-sm text-slate">
@@ -114,7 +114,7 @@ export default function QuotationForm({
             <input className={fieldClass} value={quotation.customerContact} onChange={(e) => onQuotationField('customerContact', e.target.value)} />
           </label>
           <label className="text-sm text-slate">
-            Proyecto / ubicacion
+            Proyecto / ubicación
             <input className={fieldClass} value={quotation.projectLocation} onChange={(e) => onQuotationField('projectLocation', e.target.value)} />
           </label>
           <label className="text-sm text-slate lg:col-span-2">
@@ -122,7 +122,7 @@ export default function QuotationForm({
             <input type="email" className={fieldClass} value={quotation.customerEmail} onChange={(e) => onQuotationField('customerEmail', e.target.value)} />
           </label>
           <label className="text-sm text-slate">
-            Telefono del cliente
+            Teléfono del cliente
             <input className={fieldClass} value={quotation.customerPhone} onChange={(e) => onQuotationField('customerPhone', e.target.value)} />
           </label>
           <label className="text-sm text-slate">
@@ -130,7 +130,7 @@ export default function QuotationForm({
             <input className={fieldClass} value={quotation.customerRfc} onChange={(e) => onQuotationField('customerRfc', e.target.value)} />
           </label>
           <label className="text-sm text-slate lg:col-span-2">
-            Direccion del cliente
+            Dirección del cliente
             <input className={fieldClass} value={quotation.customerAddress} onChange={(e) => onQuotationField('customerAddress', e.target.value)} />
           </label>
           <label className="text-sm text-slate">
@@ -145,7 +145,7 @@ export default function QuotationForm({
             <input type="number" min={0} max={100} step={0.5} className={fieldClass} value={company.taxPercent} onChange={(e) => onCompanyField('taxPercent', Number(e.target.value))} />
           </label>
           <label className="text-sm text-slate">
-            Vigencia (dias)
+            Vigencia (días)
             <input type="number" min={1} max={365} className={fieldClass} value={quotation.validityDays} onChange={(e) => onQuotationField('validityDays', Number(e.target.value))} />
           </label>
           <label className="text-sm text-slate">
@@ -165,11 +165,11 @@ export default function QuotationForm({
             <textarea className={`${fieldClass} h-20`} value={quotation.hseNotes} onChange={(e) => onQuotationField('hseNotes', e.target.value)} />
           </label>
           <label className="text-sm text-slate lg:col-span-2">
-            Notas tecnicas y legales
+            Notas técnicas y legales
             <textarea className={`${fieldClass} h-20`} value={quotation.legalNotes} onChange={(e) => onQuotationField('legalNotes', e.target.value)} />
           </label>
           <label className="text-sm text-slate lg:col-span-2">
-            Usuario que elabora la cotizacion
+            Usuario que elabora la cotización
             <input className={`${fieldClass} bg-slate-50`} value={quotation.salespersonFullName || quotation.responsibleSignature} readOnly />
           </label>
           <label className="text-sm text-slate lg:col-span-2">
@@ -187,7 +187,7 @@ export default function QuotationForm({
       <section className={`${panelClass} animate-liftIn [animation-delay:80ms]`}>
         <div className="mb-4">
           <h2 className="font-display text-xl text-ink">Campos visibles</h2>
-          <p className="text-sm text-slate">Activa o desactiva los bloques que quieres mostrar en la cotizacion y en el PDF.</p>
+          <p className="text-sm text-slate">Activa o desactiva los bloques que quieres mostrar en la cotización y en el PDF.</p>
         </div>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {visibilityOptions.map((option) => (

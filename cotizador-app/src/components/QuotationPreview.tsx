@@ -48,7 +48,6 @@ export default function QuotationPreview({ company, quotation, totals }: Quotati
               {safeText(company.slogan, 'Ingenieria y tecnologia')}
             </p>
             <div className="mt-3 space-y-1 text-[11px] text-slate-500">
-              <p>Soluciones Integrales</p>
               <p>RFC: {safeText(company.rfc)}</p>
               <p>{safeText(company.address)}</p>
             </div>
@@ -68,7 +67,7 @@ export default function QuotationPreview({ company, quotation, totals }: Quotati
             </div>
             <div className="grid grid-cols-[86px_1fr] gap-2 py-1">
               <span>Validez:</span>
-              <strong className="text-[#0f172a]">{quotation.validityDays} dias naturales</strong>
+              <strong className="text-[#0f172a]">{quotation.validityDays} días naturales</strong>
             </div>
           </div>
         </div>
@@ -141,17 +140,19 @@ export default function QuotationPreview({ company, quotation, totals }: Quotati
                 <span>Subtotal</span>
                 <strong className="text-[#0f172a]">{toMoney(totals.subtotal, quotation.currency)}</strong>
               </div>
-              <div className="flex items-center justify-between text-[11px] text-slate-600">
-                <span>Descuento</span>
-                <strong className="text-[#0f172a]">{toMoney(totals.discountAmount, quotation.currency)}</strong>
-              </div>
+              {totals.discountAmount > 0 ? (
+                <div className="flex items-center justify-between text-[11px] text-slate-600">
+                  <span>Descuento</span>
+                  <strong className="text-[#0f172a]">{toMoney(totals.discountAmount, quotation.currency)}</strong>
+                </div>
+              ) : null}
               <div className="flex items-center justify-between text-[11px] text-slate-600">
                 <span>IVA ({company.taxPercent}%)</span>
                 <strong className="text-[#0f172a]">{toMoney(totals.taxAmount, quotation.currency)}</strong>
               </div>
             </div>
             <div className="my-3 border-t border-[#bdebf5]" />
-            <p className="mb-1 text-[12px] font-extrabold leading-5 text-[#11b7d8]">Inversión<br />Total</p>
+            <p className="mb-1 text-[12px] font-extrabold leading-5 text-[#11b7d8]">Inversión Total</p>
             <p className="text-[18px] font-extrabold text-[#0f172a]">{toMoney(totals.total, quotation.currency)}</p>
             <p className="mt-2 text-right text-[9px] text-slate-400">* Precios expresados en Moneda Nacional ({quotation.currency})</p>
           </aside>

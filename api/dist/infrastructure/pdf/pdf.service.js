@@ -227,7 +227,6 @@ class PdfService {
               <div class="brand-subtitle">${company.slogan || 'Ingenieria y tecnologia'}</div>
             </div>
           </div>
-          <p>Soluciones Integrales</p>
           <p>RFC: ${company.rfc}</p>
           <p>${company.address}</p>
         </div>
@@ -292,16 +291,18 @@ class PdfService {
             <span class="label">Subtotal</span>
             <span class="value">${formatMoney(subtotal, quotation.currency)}</span>
           </div>
+          ${discountAmount > 0 ? `
           <div class="total-row">
             <span class="label">Descuento</span>
             <span class="value">${formatMoney(discountAmount, quotation.currency)}</span>
           </div>
+          ` : ''}
           <div class="total-row">
             <span class="label">IVA (${quotation.taxPercent}%)</span>
             <span class="value">${formatMoney(taxAmount, quotation.currency)}</span>
           </div>
           <div class="total-divider"></div>
-          <div class="total-final-label">Inversión<br>Total</div>
+          <div class="total-final-label">Inversión Total</div>
           <div class="total-final-amount">${formatMoney(total, quotation.currency)}</div>
           <div class="total-note">* Precios expresados en Moneda Nacional (${quotation.currency})</div>
         </div>
