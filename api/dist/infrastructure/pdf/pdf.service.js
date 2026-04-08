@@ -35,7 +35,8 @@ class PdfService {
         await page.pdf({
             path: outputPath,
             format: 'A4',
-            margin: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' },
+          margin: { top: '6mm', right: '6mm', bottom: '6mm', left: '6mm' },
+          scale: 0.93,
             printBackground: true
         });
         await page.close();
@@ -117,88 +118,87 @@ class PdfService {
   <title>Cotizacion - ${quotation.folio}</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Archivo', Arial, sans-serif; line-height: 1.5; color: #11304f; background: #fff; }
-    .page { width: 190mm; margin: 0 auto; padding: 10mm 0; background: white; }
+    body { font-family: 'Archivo', Arial, sans-serif; line-height: 1.4; color: #11304f; background: #fff; }
+    .page { width: 190mm; margin: 0 auto; padding: 6mm 0; background: white; }
     .page-break-avoid { break-inside: avoid; page-break-inside: avoid; }
     .page-break-before { break-before: page; page-break-before: always; }
 
-    .top-line { height: 5px; background: ${brandBlue}; margin-bottom: 24px; }
-    header { display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: 28px; margin-bottom: 22px; }
-    .company-info { display: flex; gap: 14px; }
-    .logo { width: 82px; height: 82px; background: #f3fcfe; border: 1px solid #b9edf6; border-radius: 14px; display: flex; align-items: center; justify-content: center; color: ${brandBlue}; font-weight: 700; font-size: 16px; flex-shrink: 0; }
+    .top-line { height: 4px; background: ${brandBlue}; margin-bottom: 14px; }
+    header { display: grid; grid-template-columns: minmax(0, 1fr) 222px; gap: 18px; margin-bottom: 12px; }
+    .company-info { display: flex; gap: 10px; }
+    .logo { width: 72px; height: 72px; background: #f3fcfe; border: 1px solid #b9edf6; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: ${brandBlue}; font-weight: 700; font-size: 14px; flex-shrink: 0; }
     .logo img { width: 100%; height: 100%; object-fit: contain; }
-    .brand-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .brand-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
     .brand-text { line-height: 1; }
-    .brand-title { font-size: 18px; font-weight: 800; color: #0f172a; letter-spacing: 0.02em; }
-    .brand-subtitle { font-size: 10px; font-weight: 700; color: ${brandBlue}; text-transform: uppercase; letter-spacing: 0.12em; margin-top: 4px; }
-    .company-details p { font-size: 11px; color: #64748b; margin-bottom: 3px; }
+    .brand-title { font-size: 16px; font-weight: 800; color: #0f172a; letter-spacing: 0.02em; }
+    .brand-subtitle { font-size: 9px; font-weight: 700; color: ${brandBlue}; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 2px; }
+    .company-details p { font-size: 10px; color: #64748b; margin-bottom: 2px; }
     .company-details p.contact { color: ${brandBlue}; }
 
     .folio-panel { text-align: left; }
-    .folio-title { font-size: 22px; font-weight: 800; color: #d4d8e1; letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 14px; }
-    .folio-card { border: 1px solid #e7e9ee; background: #fafbfc; padding: 14px 16px; }
-    .folio-row { display: grid; grid-template-columns: 86px 1fr; gap: 8px; font-size: 11px; color: #475569; margin-bottom: 6px; }
+    .folio-title { font-size: 18px; font-weight: 800; color: #d4d8e1; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 8px; }
+    .folio-card { border: 1px solid #e7e9ee; background: #fafbfc; padding: 10px 12px; }
+    .folio-row { display: grid; grid-template-columns: 74px 1fr; gap: 6px; font-size: 10px; color: #475569; margin-bottom: 4px; }
     .folio-row:last-child { margin-bottom: 0; }
     .folio-row strong { color: #0f172a; }
 
-    .meta-grid { border-top: 1px solid #e7e9ee; margin-bottom: 20px; padding-top: 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 28px; break-inside: avoid; page-break-inside: avoid; }
-    .meta-box .label { font-size: 10px; text-transform: uppercase; color: #a0aec0; font-weight: 800; letter-spacing: 0.12em; margin-bottom: 6px; }
-    .meta-box .title { font-size: 18px; font-weight: 800; color: #111827; margin-bottom: 4px; line-height: 1.25; }
-    .meta-box .detail { font-size: 11px; color: #475569; margin-bottom: 2px; }
+    .meta-grid { border-top: 1px solid #e7e9ee; margin-bottom: 14px; padding-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; break-inside: avoid; page-break-inside: avoid; }
+    .meta-box .label { font-size: 9px; text-transform: uppercase; color: #a0aec0; font-weight: 800; letter-spacing: 0.1em; margin-bottom: 4px; }
+    .meta-box .title { font-size: 15px; font-weight: 800; color: #111827; margin-bottom: 2px; line-height: 1.2; }
+    .meta-box .detail { font-size: 10px; color: #475569; margin-bottom: 1px; }
     .meta-box .detail strong { color: #0f172a; }
-    .brand-pair { border-top: 1px solid #e7e9ee; margin-bottom: 20px; padding-top: 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 28px; break-inside: avoid; page-break-inside: avoid; }
-    .brand-card { border: 1px solid #d9f4fa; background: #f7fdff; padding: 18px; border-radius: 18px; }
-    .brand-card-head { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
-    .brand-logo-large { width: 86px; height: 86px; border: 1px solid #c9edf4; background: #fff; border-radius: 14px; padding: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .brand-logo-large.client { width: 140px; height: 96px; padding: 10px; }
+    .brand-pair { border-top: 1px solid #e7e9ee; margin-bottom: 12px; padding-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; break-inside: avoid; page-break-inside: avoid; }
+    .brand-card { border: 1px solid #d9f4fa; background: #f7fdff; padding: 12px; border-radius: 14px; }
+    .brand-card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+    .brand-logo-large { width: 74px; height: 74px; border: 1px solid #c9edf4; background: #fff; border-radius: 12px; padding: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .brand-logo-large.client { width: 120px; height: 76px; padding: 8px; }
     .brand-logo-large img { width: 100%; height: 100%; object-fit: contain; }
-    .client-logo-wrap { margin-top: 0; width: 160px; min-height: 86px; display: flex; align-items: center; justify-content: center; border: 1px solid #c9edf4; background: #fff; padding: 10px 12px; border-radius: 14px; }
-    .client-logo { max-width: 136px; max-height: 62px; width: auto; height: auto; }
+    .client-logo-wrap { margin-top: 0; width: 130px; min-height: 74px; display: flex; align-items: center; justify-content: center; border: 1px solid #c9edf4; background: #fff; padding: 8px 10px; border-radius: 12px; font-size: 10px; }
+    .client-logo { max-width: 116px; max-height: 56px; width: auto; height: auto; }
 
-    .pricing-section { margin-bottom: 20px; }
-    .table-wrap { break-inside: auto; page-break-inside: auto; margin-bottom: 12px; }
+    .pricing-section { margin-bottom: 10px; }
+    .table-wrap { break-inside: auto; page-break-inside: auto; margin-bottom: 8px; }
     table { width: 100%; border-collapse: collapse; border-spacing: 0; }
     thead { background: ${brandBlue}; color: white; }
     thead, tfoot { display: table-header-group; }
-    thead th { padding: 10px 10px; text-align: left; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: white; border-bottom: 1px solid ${brandBlueDark}; }
-    tbody td { padding: 11px 10px; border-bottom: 1px solid #edf0f4; font-size: 11px; color: #334155; vertical-align: top; }
+    thead th { padding: 7px 8px; text-align: left; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: white; border-bottom: 1px solid ${brandBlueDark}; }
+    tbody td { padding: 7px 8px; border-bottom: 1px solid #edf0f4; font-size: 10px; color: #334155; vertical-align: top; line-height: 1.35; }
     tbody tr:nth-child(even) { background: #fff; }
     tr { break-inside: avoid; page-break-inside: avoid; }
-    .col-id { width: 36px; color: #64748b; }
-    .col-qty, .col-unit { width: 62px; text-align: center; }
-    .col-money { width: 92px; text-align: right; }
+    .col-id { width: 32px; color: #64748b; }
+    .col-qty, .col-unit { width: 56px; text-align: center; }
+    .col-money { width: 82px; text-align: right; }
     .amount-strong { font-weight: 800; color: #0f172a; }
     
-    .closing-section { break-inside: avoid; page-break-inside: avoid; }
-    .summary-layout { margin-bottom: 28px; }
-    .totals-wrap { display: flex; justify-content: flex-end; margin-top: 0; margin-bottom: 24px; break-inside: avoid; page-break-inside: avoid; }
-    .conditions { display: block; padding-top: 16px; border-top: 1px solid #e7e9ee; }
+    .closing-section { break-inside: auto; page-break-inside: auto; }
+    .summary-layout { margin-bottom: 12px; }
+    .totals-wrap { display: flex; justify-content: flex-end; margin-top: 0; margin-bottom: 10px; break-inside: avoid; page-break-inside: avoid; }
+    .conditions { display: block; padding-top: 10px; border-top: 1px solid #e7e9ee; }
     .condition-box { break-inside: avoid; page-break-inside: avoid; }
-    .condition-box + .condition-box { margin-top: 16px; }
-    .condition-box .label { font-size: 11px; font-weight: 800; text-transform: uppercase; color: #0f172a; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+    .condition-box + .condition-box { margin-top: 10px; }
+    .condition-box .label { font-size: 10px; font-weight: 800; text-transform: uppercase; color: #0f172a; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
     .condition-box .label::before { content: ""; width: 8px; height: 8px; border: 1.5px solid ${brandBlue}; border-radius: 50%; display: inline-block; }
-    .condition-box p { font-size: 11px; color: #475569; line-height: 1.55; white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere; }
+    .condition-box p { font-size: 10px; color: #475569; line-height: 1.4; white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere; }
 
-    .totals-box { margin-left: auto; width: 240px; background: #f4fdff; padding: 14px 16px; border: 1px solid #bdebf5; box-shadow: 0 10px 24px rgba(17,183,216,0.10); break-inside: avoid; page-break-inside: avoid; }
-    .total-row { display: flex; justify-content: space-between; gap: 12px; font-size: 11px; color: #475569; margin-bottom: 8px; }
+    .totals-box { margin-left: auto; width: 220px; background: #f4fdff; padding: 10px 12px; border: 1px solid #bdebf5; box-shadow: 0 8px 18px rgba(17,183,216,0.08); break-inside: avoid; page-break-inside: avoid; }
+    .total-row { display: flex; justify-content: space-between; gap: 10px; font-size: 10px; color: #475569; margin-bottom: 6px; }
     .total-row .value { font-weight: 700; color: #0f172a; }
-    .total-divider { border-top: 1px solid #bdebf5; margin: 10px 0 12px; }
-    .total-final-label { font-size: 12px; font-weight: 800; color: ${brandBlue}; line-height: 1.25; margin-bottom: 6px; }
-    .total-final-amount { font-size: 18px; font-weight: 800; color: #0f172a; line-height: 1; }
-    .total-note { font-size: 9px; color: #a0aec0; margin-top: 8px; text-align: right; }
+    .total-divider { border-top: 1px solid #bdebf5; margin: 7px 0 8px; }
+    .total-final-label { font-size: 11px; font-weight: 800; color: ${brandBlue}; line-height: 1.2; margin-bottom: 4px; }
+    .total-final-amount { font-size: 16px; font-weight: 800; color: #0f172a; line-height: 1; }
+    .total-note { font-size: 8px; color: #a0aec0; margin-top: 6px; text-align: right; }
 
-    .executive-card { margin: 24px 0 0; border: 1px solid #d9f4fa; background: #f7fdff; border-radius: 18px; padding: 14px 18px; text-align: center; break-inside: avoid; page-break-inside: avoid; }
-    .executive-name { font-size: 13px; font-weight: 800; color: #0f172a; }
-    .executive-role { font-size: 11px; font-weight: 700; color: ${brandBlue}; margin-top: 2px; }
-    .executive-meta { margin-top: 8px; font-size: 10px; color: #64748b; display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; }
-    .footer-note { margin-top: 26px; border-top: 1px solid #eef2f6; padding-top: 12px; text-align: center; font-size: 9px; color: #c0c7d2; }
+    .executive-card { margin: 12px 0 0; border: 1px solid #d9f4fa; background: #f7fdff; border-radius: 14px; padding: 10px 12px; text-align: center; break-inside: avoid; page-break-inside: avoid; }
+    .executive-name { font-size: 12px; font-weight: 800; color: #0f172a; }
+    .executive-role { font-size: 10px; font-weight: 700; color: ${brandBlue}; margin-top: 1px; }
+    .executive-meta { margin-top: 5px; font-size: 9px; color: #64748b; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
+    .footer-note { margin-top: 12px; border-top: 1px solid #eef2f6; padding-top: 8px; text-align: center; font-size: 8px; color: #c0c7d2; }
 
     @media print {
       .top-line,
       header,
       .brand-pair,
       .table-wrap,
-      .closing-section,
       .totals-box,
       .condition-box,
       .executive-card,
@@ -207,9 +207,7 @@ class PdfService {
         page-break-inside: avoid !important;
       }
 
-      .totals-box {
-        margin-top: 18px;
-      }
+      .totals-box { margin-top: 8px; }
     }
     
   </style>
@@ -250,7 +248,7 @@ class PdfService {
           <div class="meta-box">
             <div class="label">Preparado para</div>
             <div class="title">${quotation.destinationCompany}</div>
-            <div class="detail">Atn: <strong>${quotation.customerAttention}</strong></div>
+            <div class="detail"><strong>${quotation.customerAttention || 'Sin contacto asignado'}</strong></div>
             ${quotation.customerContact ? `<div class="detail">${quotation.customerContact}</div>` : ''}
           </div>
         </div>

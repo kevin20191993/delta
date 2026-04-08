@@ -86,8 +86,11 @@ export default function QuotationPreview({ company, quotation, totals }: Quotati
             <div>
               <p className="mb-2 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#8fa4b0]">Preparado para</p>
               <p className="text-[18px] font-extrabold leading-tight text-[#111827]">{safeText(quotation.destinationCompany)}</p>
-              <p className="mt-1 text-[11px] text-slate-600">Atn: <strong className="text-[#0f172a]">{safeText(quotation.customerName)}</strong></p>
-              {quotation.customerContact ? <p className="text-[11px] text-slate-600">{safeText(quotation.customerContact)}</p> : null}
+              {quotation.customerContact ? (
+                <p className="mt-1 text-[11px] text-slate-600">
+                  <strong className="text-[#0f172a]">{safeText(quotation.customerContact)}</strong>
+                </p>
+              ) : null}
             </div>
           </div>
         </div>

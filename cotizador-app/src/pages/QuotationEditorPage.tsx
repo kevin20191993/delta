@@ -309,7 +309,7 @@ export default function QuotationEditorPage() {
         quotationDate: normalizeDateInput(quotation.date),
         validityDays: Number(quotation.validityDays),
         destinationCompany: quotation.destinationCompany,
-        customerAttention: quotation.customerName,
+        customerAttention: quotation.customerContact || quotation.customerName || quotation.destinationCompany,
         customerContact: quotation.customerContact,
         customerEmail: quotation.customerEmail,
         customerPhone: quotation.customerPhone,
