@@ -34,7 +34,6 @@ export function getSessionUser(): SessionUser | null {
       id: String(payload.sub || ''),
       username: String(payload.username || ''),
       email: String(payload.email || ''),
-      phone: payload.phone ? String(payload.phone) : undefined,
       role: String(payload.role || 'admin'),
       fullName: payload.fullName ? String(payload.fullName) : undefined,
       jobTitle: payload.jobTitle ? String(payload.jobTitle) : undefined
@@ -57,7 +56,6 @@ export interface UserSummary {
   id: number;
   username: string;
   email: string;
-  phone?: string;
   role: string;
   isActive: boolean;
   fullName?: string;
@@ -68,7 +66,6 @@ export interface SessionUser {
   id: string;
   username: string;
   email: string;
-  phone?: string;
   role: string;
   fullName?: string;
   jobTitle?: string;
@@ -123,7 +120,7 @@ async function request<T = any>(endpoint: string, options: RequestOptions = {}):
 }
 
 export class ApiClient {
-  static login(username: string, password: string): Promise<{ token: string; user: string; email: string; phone?: string; role: string; fullName?: string; jobTitle?: string }> {
+  static login(username: string, password: string): Promise<{ token: string; user: string; email: string; role: string; fullName?: string; jobTitle?: string }> {
     return request('/api/auth/login', {
       method: 'POST',
       requiresAuth: false,
@@ -229,7 +226,6 @@ export class ApiClient {
   static createUser(data: {
     username: string;
     email: string;
-    phone: string;
     fullName: string;
     jobTitle: string;
     password: string;
@@ -245,7 +241,6 @@ export class ApiClient {
   static updateUser(id: number, data: {
     username: string;
     email: string;
-    phone: string;
     fullName: string;
     jobTitle: string;
     password?: string;
