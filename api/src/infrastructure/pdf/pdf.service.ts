@@ -139,7 +139,9 @@ export class PdfService {
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Archivo', Arial, sans-serif; line-height: 1.4; color: #11304f; background: #fff; }
-    .page { width: 190mm; margin: 0 auto; padding: 6mm 0; background: white; }
+    .page { width: 190mm; margin: 0 auto; padding: 6mm 0; background: white; min-height: 285mm; display: flex; flex-direction: column; }
+    .main-content { flex: 1 1 auto; }
+    .page-footer-anchor { margin-top: auto; break-inside: avoid; page-break-inside: avoid; }
     .page-break-avoid { break-inside: avoid; page-break-inside: avoid; }
     .page-break-before { break-before: page; page-break-before: always; }
 
@@ -208,11 +210,11 @@ export class PdfService {
     .total-final-amount { font-size: 16px; font-weight: 800; color: #0f172a; line-height: 1; }
     .total-note { font-size: 8px; color: #a0aec0; margin-top: 6px; text-align: right; }
 
-    .executive-card { margin: 12px 0 0; border: 1px solid #d9f4fa; background: #f7fdff; border-radius: 14px; padding: 10px 12px; text-align: center; break-inside: avoid; page-break-inside: avoid; }
+    .executive-card { margin: 8px 0 0; border: 1px solid #d9f4fa; background: #f7fdff; border-radius: 14px; padding: 10px 12px; text-align: center; break-inside: avoid; page-break-inside: avoid; }
     .executive-name { font-size: 12px; font-weight: 800; color: #0f172a; }
     .executive-role { font-size: 10px; font-weight: 700; color: ${brandBlue}; margin-top: 1px; }
     .executive-meta { margin-top: 5px; font-size: 9px; color: #64748b; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
-    .footer-note { margin-top: 12px; border-top: 1px solid #eef2f6; padding-top: 8px; text-align: center; font-size: 8px; color: #c0c7d2; }
+    .footer-note { margin-top: 8px; border-top: 1px solid #eef2f6; padding-top: 8px; text-align: center; font-size: 8px; color: #c0c7d2; }
 
     @media print {
       .top-line,
@@ -234,6 +236,7 @@ export class PdfService {
 </head>
 <body>
   <div class="page">
+    <div class="main-content">
     <div class="top-line page-break-avoid"></div>
     <header class="page-break-avoid">
       <div class="company-info">
@@ -333,7 +336,10 @@ export class PdfService {
           ${textBlocksHtml}
         </div>
       </div>
+    </div>
+    </div>
 
+    <div class="page-footer-anchor">
       <div class="executive-card">
         <div class="executive-name">${quotation.salespersonFullName || quotation.responsibleSignatureName || 'Responsable comercial'}</div>
         <div class="executive-role">${quotation.salespersonJobTitle || 'Asesor comercial'}</div>
