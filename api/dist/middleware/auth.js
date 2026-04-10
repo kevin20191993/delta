@@ -21,6 +21,7 @@ function requireAuth(req, res, next) {
             email: decoded.email || '',
             phone: decoded.phone || '',
             role: decoded.role || 'admin',
+            canEditAllQuotations: Boolean(decoded.canEditAllQuotations),
             fullName: decoded.fullName || '',
             jobTitle: decoded.jobTitle || ''
         };

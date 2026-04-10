@@ -13,11 +13,32 @@ export class QuotationController {
     private authRepo: MySqlAuthRepository
   ) {}
 
+  private async resolveCurrentUser(req: AuthenticatedRequest) {
+    return req.authUser?.id ? await this.authRepo.findById(Number(req.authUser.id)) : null;
+  }
+
+  private canEditQuotation(currentUser: Awaited<ReturnType<QuotationController['resolveCurrentUser']>>, quotation: { createdBy?: string | null; salespersonFullName?: string | null; responsibleSignatureName?: string | null }): boolean {
+    if (!currentUser) return false;
+    if (currentUser.canEditAllQuotations) return true;
+
+    const currentUsername = (currentUser.username || '').trim().toLowerCase();
+    const currentFullName = (currentUser.fullName || '').trim().toLowerCase();
+    const createdBy = (quotation.createdBy || '').trim().toLowerCase();
+    const salespersonFullName = (quotation.salespersonFullName || '').trim().toLowerCase();
+    const responsibleSignatureName = (quotation.responsibleSignatureName || '').trim().toLowerCase();
+
+    return Boolean(
+      (createdBy && createdBy === currentUsername) ||
+      (salespersonFullName && (salespersonFullName === currentFullName || salespersonFullName === currentUsername)) ||
+      (responsibleSignatureName && (responsibleSignatureName === currentFullName || responsibleSignatureName === currentUsername))
+    );
+  }
+
   async create(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const companySettingsId = req.headers['x-company-id'] as string || 'default';
       const validated = CreateQuotationValidation.parse(req.body);
-      const currentUser = req.authUser?.id ? await this.authRepo.findById(Number(req.authUser.id)) : null;
+      const currentUser = await this.resolveCurrentUser(req);
       const result = await this.quotationService.createWithAuthor(companySettingsId, validated, {
         username: currentUser?.username || req.authUser?.username || 'api',
         fullName: currentUser?.fullName || req.authUser?.fullName || req.authUser?.username,
@@ -56,7 +77,14 @@ export class QuotationController {
       const { id } = req.params;
       const companySettingsId = req.headers['x-company-id'] as string || 'default';
       const validated = CreateQuotationValidation.parse(req.body);
-      const currentUser = req.authUser?.id ? await this.authRepo.findById(Number(req.authUser.id)) : null;
+      const currentUser = await this.resolveCurrentUser(req);
+      const existing = await this.quotationService.getById(id);
+
+      if (!this.canEditQuotation(currentUser, existing.quotation)) {
+        res.status(403).json({ error: 'No tienes permiso para editar esta cotización' });
+        return;
+      }
+
       const result = await this.quotationService.updateWithAuthor(id, companySettingsId, validated, {
         username: currentUser?.username || req.authUser?.username || 'api',
         fullName: currentUser?.fullName || req.authUser?.fullName || req.authUser?.username,
@@ -92,7 +120,7 @@ export class QuotationController {
     }
   }
 
-  async list(req: Request, res: Response): Promise<void> {
+  async list(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { status, limit = '20', offset = '0' } = req.query;
 
@@ -117,10 +145,18 @@ export class QuotationController {
     }
   }
 
-  async updateStatus(req: Request, res: Response): Promise<void> {
+  async updateStatus(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { id } = req.params;
       const validated = UpdateQuotationStatusValidation.parse(req.body);
+
+      const currentUser = await this.resolveCurrentUser(req);
+      const existing = await this.quotationService.getById(id);
+
+      if (!this.canEditQuotation(currentUser, existing.quotation)) {
+        res.status(403).json({ error: 'No tienes permiso para editar esta cotización' });
+        return;
+      }
 
       await this.quotationService.updateStatus(id, validated.status, validated.note);
       res.json({ success: true });
@@ -150,9 +186,18 @@ export class QuotationController {
     }
   }
 
-  async delete(req: Request, res: Response): Promise<void> {
+  async delete(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { id } = req.params;
+
+      const currentUser = await this.resolveCurrentUser(req);
+      const existing = await this.quotationService.getById(id);
+
+      if (!this.canEditQuotation(currentUser, existing.quotation)) {
+        res.status(403).json({ error: 'No tienes permiso para eliminar esta cotización' });
+        return;
+      }
+
       await this.quotationService.delete(id);
       res.json({ success: true });
     } catch (err) {
@@ -218,7 +263,7 @@ export class UserController {
 
   async create(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const { username, email, phone = '', password, confirmPassword, role = 'admin', fullName = '', jobTitle = '' } = req.body ?? {};
+      const { username, email, phone = '', password, confirmPassword, role = 'admin', canEditAllQuotations = true, fullName = '', jobTitle = '' } = req.body ?? {};
 
       if (
         typeof username !== 'string' ||
@@ -270,6 +315,7 @@ export class UserController {
         email,
         passwordHash: hashPassword(password),
         role: role === 'viewer' ? 'viewer' : 'admin',
+        canEditAllQuotations: Boolean(canEditAllQuotations),
         fullName,
         jobTitle,
         phone
@@ -295,6 +341,7 @@ export class UserController {
         password = '',
         confirmPassword = '',
         role = 'admin',
+        canEditAllQuotations = true,
         fullName = '',
         jobTitle = '',
         phone = ''
@@ -343,6 +390,7 @@ export class UserController {
         jobTitle,
         phone,
         role: role === 'viewer' ? 'viewer' : 'admin',
+        canEditAllQuotations: Boolean(canEditAllQuotations),
         passwordHash: password ? hashPassword(password) : undefined
       });
 

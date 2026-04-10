@@ -8,6 +8,7 @@ export interface AuthUser {
   phone?: string;
   passwordHash: string;
   role: string;
+  canEditAllQuotations: boolean;
   isActive: boolean;
   fullName?: string;
   jobTitle?: string;
@@ -26,6 +27,7 @@ export interface CreateUserInput {
   phone?: string;
   passwordHash: string;
   role: string;
+  canEditAllQuotations: boolean;
   fullName?: string;
   jobTitle?: string;
 }
@@ -35,6 +37,7 @@ export interface UpdateUserInput {
   email: string;
   phone?: string;
   role: string;
+  canEditAllQuotations: boolean;
   fullName?: string;
   jobTitle?: string;
   passwordHash?: string;
@@ -71,6 +74,7 @@ function mapAuthUser(row: any): AuthUser {
     phone: row.phone ? String(row.phone) : undefined,
     passwordHash: String(row.password_hash),
     role: String(row.role),
+    canEditAllQuotations: Boolean(row.can_edit_all_quotations),
     isActive: Boolean(row.is_active),
     fullName: row.full_name ? String(row.full_name) : undefined,
     jobTitle: row.job_title ? String(row.job_title) : undefined
@@ -91,6 +95,7 @@ export class MySqlAuthRepository {
         job_title varchar(160) DEFAULT NULL,
         password_hash text NOT NULL,
         role varchar(40) NOT NULL DEFAULT 'admin',
+        can_edit_all_quotations tinyint(1) NOT NULL DEFAULT 1,
         is_active tinyint(1) NOT NULL DEFAULT 1,
         created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -104,7 +109,8 @@ export class MySqlAuthRepository {
       ALTER TABLE cotizador_users
       ADD COLUMN IF NOT EXISTS phone varchar(40) DEFAULT NULL,
       ADD COLUMN IF NOT EXISTS full_name varchar(160) DEFAULT NULL,
-      ADD COLUMN IF NOT EXISTS job_title varchar(160) DEFAULT NULL
+      ADD COLUMN IF NOT EXISTS job_title varchar(160) DEFAULT NULL,
+      ADD COLUMN IF NOT EXISTS can_edit_all_quotations tinyint(1) NOT NULL DEFAULT 1
     `);
 
     await db.execute(`
@@ -120,6 +126,10 @@ export class MySqlAuthRepository {
             ELSE 'Administrador'
           END
           ELSE job_title
+        END,
+        can_edit_all_quotations = CASE
+          WHEN role = 'viewer' THEN 0
+          ELSE can_edit_all_quotations
         END
     `);
 
@@ -156,8 +166,8 @@ export class MySqlAuthRepository {
 
     await db.execute(
       `
-        INSERT INTO cotizador_users (username, email, phone, full_name, job_title, password_hash, role, is_active)
-        VALUES (?, ?, ?, ?, ?, ?, 'admin', 1)
+        INSERT INTO cotizador_users (username, email, phone, full_name, job_title, password_hash, role, can_edit_all_quotations, is_active)
+        VALUES (?, ?, ?, ?, ?, ?, 'admin', 1, 1)
       `,
       [
         config.username.trim().toLowerCase(),
@@ -174,7 +184,7 @@ export class MySqlAuthRepository {
     const db = getPool();
     const [rows] = await db.query<any[]>(
       `
-        SELECT id, username, email, phone, full_name, job_title, role, is_active
+        SELECT id, username, email, phone, full_name, job_title, role, can_edit_all_quotations, is_active
         FROM cotizador_users
         ORDER BY COALESCE(full_name, username) ASC
       `
@@ -188,6 +198,7 @@ export class MySqlAuthRepository {
       fullName: row.full_name ? String(row.full_name) : undefined,
       jobTitle: row.job_title ? String(row.job_title) : undefined,
       role: String(row.role),
+      canEditAllQuotations: Boolean(row.can_edit_all_quotations),
       isActive: Boolean(row.is_active)
     }));
   }
@@ -196,8 +207,8 @@ export class MySqlAuthRepository {
     const db = getPool();
     const [result] = await db.execute<mysql.ResultSetHeader>(
       `
-        INSERT INTO cotizador_users (username, email, phone, full_name, job_title, password_hash, role, is_active)
-        VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+        INSERT INTO cotizador_users (username, email, phone, full_name, job_title, password_hash, role, can_edit_all_quotations, is_active)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
       `,
       [
         input.username.trim().toLowerCase(),
@@ -206,7 +217,8 @@ export class MySqlAuthRepository {
         input.fullName?.trim() || null,
         input.jobTitle?.trim() || null,
         input.passwordHash,
-        input.role
+        input.role,
+        input.canEditAllQuotations ? 1 : 0
       ]
     );
 
@@ -218,6 +230,7 @@ export class MySqlAuthRepository {
       fullName: input.fullName?.trim() || undefined,
       jobTitle: input.jobTitle?.trim() || undefined,
       role: input.role,
+      canEditAllQuotations: input.canEditAllQuotations,
       isActive: true
     };
   }
@@ -230,12 +243,13 @@ export class MySqlAuthRepository {
       input.phone?.trim() || null,
       input.fullName?.trim() || null,
       input.jobTitle?.trim() || null,
-      input.role
+      input.role,
+      input.canEditAllQuotations ? 1 : 0
     ];
 
     let query = `
       UPDATE cotizador_users
-      SET username = ?, email = ?, phone = ?, full_name = ?, job_title = ?, role = ?
+      SET username = ?, email = ?, phone = ?, full_name = ?, job_title = ?, role = ?, can_edit_all_quotations = ?
     `;
 
     if (input.passwordHash) {
@@ -261,6 +275,7 @@ export class MySqlAuthRepository {
       fullName: user.fullName,
       jobTitle: user.jobTitle,
       role: user.role,
+      canEditAllQuotations: user.canEditAllQuotations,
       isActive: user.isActive
     };
   }
@@ -269,7 +284,7 @@ export class MySqlAuthRepository {
     const db = getPool();
     const [rows] = await db.execute<any[]>(
       `
-        SELECT id, username, email, phone, full_name, job_title, password_hash, role, is_active
+        SELECT id, username, email, phone, full_name, job_title, password_hash, role, can_edit_all_quotations, is_active
         FROM cotizador_users
         WHERE id = ?
         LIMIT 1
@@ -289,7 +304,7 @@ export class MySqlAuthRepository {
     const normalized = login.trim().toLowerCase();
     const [rows] = await db.execute<any[]>(
       `
-        SELECT id, username, email, phone, full_name, job_title, password_hash, role, is_active
+        SELECT id, username, email, phone, full_name, job_title, password_hash, role, can_edit_all_quotations, is_active
         FROM cotizador_users
         WHERE username = ? OR email = ?
         LIMIT 1
@@ -309,7 +324,7 @@ export class MySqlAuthRepository {
     const normalized = email.trim().toLowerCase();
     const [rows] = await db.execute<any[]>(
       `
-        SELECT id, username, email, phone, full_name, job_title, password_hash, role, is_active
+        SELECT id, username, email, phone, full_name, job_title, password_hash, role, can_edit_all_quotations, is_active
         FROM cotizador_users
         WHERE email = ?
         LIMIT 1

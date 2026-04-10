@@ -36,6 +36,7 @@ export function getSessionUser(): SessionUser | null {
       email: String(payload.email || ''),
       phone: payload.phone ? String(payload.phone) : undefined,
       role: String(payload.role || 'admin'),
+      canEditAllQuotations: Boolean(payload.canEditAllQuotations),
       fullName: payload.fullName ? String(payload.fullName) : undefined,
       jobTitle: payload.jobTitle ? String(payload.jobTitle) : undefined
     };
@@ -59,6 +60,7 @@ export interface UserSummary {
   email: string;
   phone?: string;
   role: string;
+  canEditAllQuotations: boolean;
   isActive: boolean;
   fullName?: string;
   jobTitle?: string;
@@ -70,6 +72,7 @@ export interface SessionUser {
   email: string;
   phone?: string;
   role: string;
+  canEditAllQuotations: boolean;
   fullName?: string;
   jobTitle?: string;
 }
@@ -123,7 +126,7 @@ async function request<T = any>(endpoint: string, options: RequestOptions = {}):
 }
 
 export class ApiClient {
-  static login(username: string, password: string): Promise<{ token: string; user: string; email: string; phone?: string; role: string; fullName?: string; jobTitle?: string }> {
+  static login(username: string, password: string): Promise<{ token: string; user: string; email: string; phone?: string; role: string; canEditAllQuotations: boolean; fullName?: string; jobTitle?: string }> {
     return request('/api/auth/login', {
       method: 'POST',
       requiresAuth: false,
@@ -234,6 +237,7 @@ export class ApiClient {
     password: string;
     confirmPassword: string;
     role: string;
+    canEditAllQuotations: boolean;
   }): Promise<{ user: UserSummary }> {
     return this.fetch('/api/users', {
       method: 'POST',
@@ -249,6 +253,7 @@ export class ApiClient {
     password?: string;
     confirmPassword?: string;
     role: string;
+    canEditAllQuotations: boolean;
   }): Promise<{ user: UserSummary }> {
     return this.fetch(`/api/users/${id}`, {
       method: 'PUT',

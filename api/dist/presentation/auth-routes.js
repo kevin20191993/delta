@@ -27,6 +27,7 @@ function signToken(user) {
         email: user.email,
         phone: user.phone || '',
         role: user.role,
+        canEditAllQuotations: Boolean(user.canEditAllQuotations),
         fullName: user.fullName || '',
         jobTitle: user.jobTitle || ''
     }, secret, { expiresIn: '8h' });
@@ -55,6 +56,7 @@ function createAuthRoutes() {
                 email: user.email,
                 phone: user.phone || '',
                 role: user.role,
+                canEditAllQuotations: user.canEditAllQuotations,
                 fullName: user.fullName || user.username,
                 jobTitle: user.jobTitle || ''
             });

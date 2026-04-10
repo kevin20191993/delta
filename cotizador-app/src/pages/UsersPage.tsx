@@ -1,9 +1,10 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ApiClient, UserSummary } from '../lib/api';
+import { ApiClient, UserSummary, getSessionUser } from '../lib/api';
 
 export default function UsersPage() {
   const navigate = useNavigate();
+  const sessionUser = getSessionUser();
   const [users, setUsers] = useState<UserSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -18,7 +19,8 @@ export default function UsersPage() {
     jobTitle: '',
     password: '',
     confirmPassword: '',
-    role: 'admin'
+    role: 'admin',
+    canEditAllQuotations: true
   });
 
   const loadUsers = async () => {
@@ -68,7 +70,8 @@ export default function UsersPage() {
         jobTitle: '',
         password: '',
         confirmPassword: '',
-        role: 'admin'
+          role: 'admin',
+          canEditAllQuotations: true
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No fue posible crear el usuario');
@@ -89,7 +92,8 @@ export default function UsersPage() {
       jobTitle: user.jobTitle || '',
       password: '',
       confirmPassword: '',
-      role: user.role
+      role: user.role,
+      canEditAllQuotations: user.canEditAllQuotations
     });
   };
 
@@ -105,7 +109,8 @@ export default function UsersPage() {
       jobTitle: '',
       password: '',
       confirmPassword: '',
-      role: 'admin'
+      role: 'admin',
+      canEditAllQuotations: true
     });
   };
 
@@ -125,13 +130,22 @@ export default function UsersPage() {
               <h1 className="mt-2 font-display text-3xl text-ink">Usuarios</h1>
               <p className="text-sm text-slate-500">Crea nuevas cuentas para acceder al cotizador.</p>
             </div>
-            <button
-              type="button"
-              onClick={() => navigate('/cotizador/editor')}
-              className="rounded-lg bg-ember px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-600"
-            >
-              + Nueva cotización
-            </button>
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              {sessionUser ? (
+                <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-right">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate">Sesión activa</p>
+                  <p className="text-sm font-bold text-ink">{sessionUser.fullName || 'Nombre no configurado'}</p>
+                  <p className="text-xs text-slate">{sessionUser.jobTitle || 'Puesto no configurado'}</p>
+                </div>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => navigate('/cotizador/editor')}
+                className="rounded-lg bg-ember px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-600"
+              >
+                + Nueva cotización
+              </button>
+            </div>
           </div>
         </header>
 
@@ -207,6 +221,14 @@ export default function UsersPage() {
                   <option value="viewer">Viewer</option>
                 </select>
               </label>
+              <label className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-ink">
+                <input
+                  type="checkbox"
+                  checked={form.canEditAllQuotations}
+                  onChange={(event) => setForm((prev) => ({ ...prev, canEditAllQuotations: event.target.checked }))}
+                />
+                <span>Puede editar todas las cotizaciones</span>
+              </label>
               <label className="block text-sm text-slate">
                 Contraseña {editingUserId ? '(opcional)' : ''}
                 <input
@@ -266,6 +288,7 @@ export default function UsersPage() {
                       <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Correo</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Teléfono</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Rol</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Permiso cotizaciones</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Estado</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Acciones</th>
                     </tr>
@@ -279,6 +302,7 @@ export default function UsersPage() {
                         <td className="px-4 py-3 text-slate-500">{user.email}</td>
                         <td className="px-4 py-3 text-slate-500">{user.phone || '-'}</td>
                         <td className="px-4 py-3 text-slate-500">{user.role}</td>
+                        <td className="px-4 py-3 text-slate-500">{user.canEditAllQuotations ? 'Puede editar todas' : 'Solo propias'}</td>
                         <td className="px-4 py-3">
                           <span className={`rounded-full px-2 py-1 text-xs font-semibold ${user.isActive ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
                             {user.isActive ? 'Activo' : 'Inactivo'}

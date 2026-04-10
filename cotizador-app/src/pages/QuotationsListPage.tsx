@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ApiClient, clearToken } from '../lib/api';
+import { ApiClient, clearToken, getSessionUser } from '../lib/api';
 
 type QuotationStatus = 'draft' | 'sent' | 'approved' | 'rejected';
 
@@ -54,17 +54,27 @@ export default function QuotationsListPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('');
-  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [exportingId, setExportingId] = useState<string | null>(null);
   const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null);
+  const sessionUser = getSessionUser();
   const [columnFilters, setColumnFilters] = useState({
     folio: '',
     destinationCompany: '',
     customerAttention: '',
     salesperson: '',
-    date: '',
+    quotationDate: '',
+    createdAt: '',
     total: ''
   });
+
+  const canEditQuotation = (quotation: QuotationSummary) => Boolean(
+    sessionUser && (
+      sessionUser.canEditAllQuotations ||
+      quotation.createdBy === sessionUser.username ||
+      quotation.salespersonFullName.toLowerCase() === (sessionUser.fullName || '').toLowerCase() ||
+      quotation.salespersonFullName.toLowerCase() === sessionUser.username.toLowerCase()
+    )
+  );
 
   const loadQuotations = async () => {
     setLoading(true);
@@ -102,7 +112,8 @@ export default function QuotationsListPage() {
 
   const filteredQuotations = quotations.filter((q) => {
     const salespersonText = `${q.salespersonFullName} ${q.salespersonJobTitle} ${q.createdBy}`.toLowerCase();
-    const dateText = formatDate(q.quotationDate).toLowerCase();
+    const quotationDateText = formatDate(q.quotationDate).toLowerCase();
+    const createdAtText = formatDate(q.createdAt).toLowerCase();
     const totalText = formatCurrency(q.total, q.currency).toLowerCase();
 
     return (
@@ -110,7 +121,8 @@ export default function QuotationsListPage() {
       q.destinationCompany.toLowerCase().includes(columnFilters.destinationCompany.toLowerCase()) &&
       q.customerAttention.toLowerCase().includes(columnFilters.customerAttention.toLowerCase()) &&
       salespersonText.includes(columnFilters.salesperson.toLowerCase()) &&
-      dateText.includes(columnFilters.date.toLowerCase()) &&
+      quotationDateText.includes(columnFilters.quotationDate.toLowerCase()) &&
+      createdAtText.includes(columnFilters.createdAt.toLowerCase()) &&
       totalText.includes(columnFilters.total.toLowerCase())
     );
   });
@@ -129,19 +141,6 @@ export default function QuotationsListPage() {
     localStorage.removeItem('kp-cotizador-draft-v1');
     localStorage.removeItem('kp-cotizador-id-v1');
     navigate('/cotizador/editor');
-  };
-
-  const handleDelete = async (id: string, folio: string) => {
-    if (!confirm(`¿Eliminar la cotización ${folio}? Esta acción no se puede deshacer.`)) return;
-    setDeletingId(id);
-    try {
-      await ApiClient.deleteQuotation(id);
-      setQuotations((prev) => prev.filter((q) => q.id !== id));
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Error al eliminar');
-    } finally {
-      setDeletingId(null);
-    }
   };
 
   const handleExportPdf = async (id: string) => {
@@ -204,7 +203,14 @@ export default function QuotationsListPage() {
               </p>
               <h1 className="font-display text-3xl text-ink">Cotizaciones</h1>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              {sessionUser ? (
+                <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-right">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate">Sesión activa</p>
+                  <p className="text-sm font-bold text-ink">{sessionUser.fullName || 'Nombre no configurado'}</p>
+                  <p className="text-xs text-slate">{sessionUser.jobTitle || 'Puesto no configurado'}</p>
+                </div>
+              ) : null}
               <button
                 type="button"
                 onClick={() => navigate('/cotizador/users')}
@@ -290,7 +296,10 @@ export default function QuotationsListPage() {
                       Ejecutivo / Usuario
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Fecha
+                      Fecha cotización
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Fecha creación
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                       Estado
@@ -337,9 +346,17 @@ export default function QuotationsListPage() {
                     </th>
                     <th className="px-4 py-2">
                       <input
-                        value={columnFilters.date}
-                        onChange={(e) => handleColumnFilterChange('date', e.target.value)}
-                        placeholder="Filtrar fecha"
+                        value={columnFilters.quotationDate}
+                        onChange={(e) => handleColumnFilterChange('quotationDate', e.target.value)}
+                        placeholder="Filtrar fecha cotización"
+                        className="w-full rounded-md border border-slate-200 px-2 py-1 text-xs text-slate-600 outline-none focus:border-steel"
+                      />
+                    </th>
+                    <th className="px-4 py-2">
+                      <input
+                        value={columnFilters.createdAt}
+                        onChange={(e) => handleColumnFilterChange('createdAt', e.target.value)}
+                        placeholder="Filtrar fecha creación"
                         className="w-full rounded-md border border-slate-200 px-2 py-1 text-xs text-slate-600 outline-none focus:border-steel"
                       />
                     </th>
@@ -355,7 +372,7 @@ export default function QuotationsListPage() {
                     <th className="px-4 py-2 text-center">
                       <button
                         type="button"
-                        onClick={() => setColumnFilters({ folio: '', destinationCompany: '', customerAttention: '', salesperson: '', date: '', total: '' })}
+                        onClick={() => setColumnFilters({ folio: '', destinationCompany: '', customerAttention: '', salesperson: '', quotationDate: '', createdAt: '', total: '' })}
                         className="rounded-md border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
                       >
                         Limpiar
@@ -384,10 +401,13 @@ export default function QuotationsListPage() {
                       <td className="px-4 py-3 text-slate-500">
                         {formatDate(q.quotationDate)}
                       </td>
+                      <td className="px-4 py-3 text-slate-500">
+                        {formatDate(q.createdAt)}
+                      </td>
                       <td className="px-4 py-3">
                         <select
                           value={q.status}
-                          disabled={statusUpdatingId === q.id}
+                          disabled={statusUpdatingId === q.id || !canEditQuotation(q)}
                           onChange={(e) => handleStatusChange(q.id, e.target.value)}
                           className={`rounded-full px-2 py-0.5 text-xs font-semibold border-0 cursor-pointer focus:outline-none ${STATUS_CLASSES[q.status]}`}
                         >
@@ -402,14 +422,20 @@ export default function QuotationsListPage() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-center gap-1">
-                          <button
-                            type="button"
-                            title="Abrir en editor"
-                            onClick={() => handleOpenEditor(q.id)}
-                            className="rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold text-ink hover:bg-slate-200 transition"
-                          >
-                            Editar
-                          </button>
+                          {canEditQuotation(q) ? (
+                            <button
+                              type="button"
+                              title="Abrir en editor"
+                              onClick={() => handleOpenEditor(q.id)}
+                              className="rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold text-ink hover:bg-slate-200 transition"
+                            >
+                              Editar
+                            </button>
+                          ) : (
+                            <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-400">
+                              Solo lectura
+                            </span>
+                          )}
                           <button
                             type="button"
                             title="Ver PDF"
@@ -418,15 +444,6 @@ export default function QuotationsListPage() {
                             className="rounded-md bg-ink px-2 py-1 text-xs font-semibold text-white hover:bg-steel disabled:opacity-50 transition"
                           >
                             {exportingId === q.id ? '...' : 'PDF'}
-                          </button>
-                          <button
-                            type="button"
-                            title="Eliminar"
-                            disabled={deletingId === q.id}
-                            onClick={() => handleDelete(q.id, q.folio)}
-                            className="rounded-md bg-red-50 px-2 py-1 text-xs font-semibold text-red-600 hover:bg-red-100 disabled:opacity-50 transition"
-                          >
-                            {deletingId === q.id ? '...' : '✕'}
                           </button>
                         </div>
                       </td>

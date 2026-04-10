@@ -16,7 +16,7 @@ class PostgresQuotationRepository {
         conditions, hse_notes, legal_notes, observations, responsible_signature_name, salesperson_full_name, salesperson_job_title, salesperson_email, salesperson_phone,
         show_conditions, show_hse, show_legal_notes, show_responsible_signature, show_customer_acceptance, show_client_logo,
         status, created_at, updated_at, created_by, updated_by
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, NOW(), NOW(), $32, $32)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, NOW(), NOW(), $33, $33)
       RETURNING *
     `;
         const values = [

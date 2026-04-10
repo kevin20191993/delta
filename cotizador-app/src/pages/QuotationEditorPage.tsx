@@ -98,6 +98,7 @@ export default function QuotationEditorPage() {
   const [customers, setCustomers] = useState<CustomerRecord[]>([]);
   const [error, setError] = useState('');
   const [quotationId, setQuotationId] = useState<string>(() => localStorage.getItem(QUOTATION_ID_KEY) || '');
+  const [canEditCurrentQuotation, setCanEditCurrentQuotation] = useState(true);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
@@ -109,11 +110,11 @@ export default function QuotationEditorPage() {
     setQuotation((prev) => {
       const updated = {
         ...prev,
-        salespersonFullName: sessionUser.fullName || prev.salespersonFullName || sessionUser.username,
-        salespersonJobTitle: sessionUser.jobTitle || prev.salespersonJobTitle || 'Asesor comercial',
-        salespersonEmail: sessionUser.email || prev.salespersonEmail || '',
-        salespersonPhone: sessionUser.phone || prev.salespersonPhone || '',
-        responsibleSignature: sessionUser.fullName || prev.responsibleSignature || sessionUser.username
+        salespersonFullName: prev.salespersonFullName || sessionUser.fullName || sessionUser.username,
+        salespersonJobTitle: prev.salespersonJobTitle || sessionUser.jobTitle || 'Asesor comercial',
+        salespersonEmail: prev.salespersonEmail || sessionUser.email || '',
+        salespersonPhone: prev.salespersonPhone || sessionUser.phone || '',
+        responsibleSignature: prev.responsibleSignature || sessionUser.fullName || sessionUser.username
       };
       localStorage.setItem(QUOTATION_STORAGE_KEY, JSON.stringify(updated));
       return updated;
@@ -163,7 +164,26 @@ export default function QuotationEditorPage() {
 
       try {
         const data = await ApiClient.getQuotation(quotationId);
+        const canEdit = Boolean(
+          sessionUser && (
+            sessionUser.canEditAllQuotations ||
+            data.quotation?.createdBy === sessionUser.username ||
+            (String(data.quotation?.salespersonFullName || '').toLowerCase() === String(sessionUser.fullName || '').toLowerCase()) ||
+            (String(data.quotation?.salespersonFullName || '').toLowerCase() === sessionUser.username.toLowerCase()) ||
+            (String(data.quotation?.responsibleSignatureName || '').toLowerCase() === String(sessionUser.fullName || '').toLowerCase()) ||
+            (String(data.quotation?.responsibleSignatureName || '').toLowerCase() === sessionUser.username.toLowerCase())
+          )
+        );
+
+        if (!canEdit) {
+          localStorage.removeItem(QUOTATION_ID_KEY);
+          window.alert('No tienes permiso para editar esta cotización.');
+          navigate('/cotizador/');
+          return;
+        }
+
         const mapped = mapApiQuotationToDraft(data);
+        setCanEditCurrentQuotation(true);
         setQuotation(mapped);
         localStorage.setItem(QUOTATION_STORAGE_KEY, JSON.stringify(mapped));
       } catch (err) {
@@ -281,6 +301,11 @@ export default function QuotationEditorPage() {
   };
 
   const saveToBackend = async () => {
+    if (quotationId && !canEditCurrentQuotation) {
+      setError('No tienes permiso para editar esta cotización');
+      return;
+    }
+
     setIsSaving(true);
     setError('');
 
@@ -443,7 +468,14 @@ export default function QuotationEditorPage() {
                 {quotationId ? `Cotización ${quotation.folio}` : 'Nueva cotización'}
               </h1>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              {sessionUser ? (
+                <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-right">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate">Sesión activa</p>
+                  <p className="text-sm font-bold text-ink">{sessionUser.fullName || 'Nombre no configurado'}</p>
+                  <p className="text-xs text-slate">{sessionUser.jobTitle || 'Puesto no configurado'}</p>
+                </div>
+              ) : null}
               <button
                 type="button"
                 onClick={() => navigate('/cotizador/users')}

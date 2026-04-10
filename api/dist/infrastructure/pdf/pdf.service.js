@@ -35,8 +35,8 @@ class PdfService {
         await page.pdf({
             path: outputPath,
             format: 'A4',
-          margin: { top: '6mm', right: '6mm', bottom: '6mm', left: '6mm' },
-          scale: 0.93,
+            margin: { top: '6mm', right: '6mm', bottom: '6mm', left: '6mm' },
+            scale: 0.93,
             printBackground: true
         });
         await page.close();

@@ -1,0 +1,6 @@
+    folio    | created_by |     salesperson_full_name     |  responsible_signature_name   
+-------------+------------+-------------------------------+-------------------------------
+ QT-2026-102 | gerencia   | Andrea Priscila Castro Valdez | Andrea Priscila Castro Valdez
+ QT-2026-101 | api        | Robert Eduin Naranjo Jerez    | Robert Eduin Naranjo Jerez
+(2 rows)
+

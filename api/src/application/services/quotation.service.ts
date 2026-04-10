@@ -200,10 +200,11 @@ export class QuotationService {
     const taxAmount = taxable * (data.taxPercent / 100);
     const total = taxable + taxAmount;
 
-    const authorName = author?.fullName?.trim() || author?.username || existing.salespersonFullName || data.responsibleSignatureName || 'Responsable comercial';
-    const authorJobTitle = author?.jobTitle?.trim() || existing.salespersonJobTitle || 'Asesor comercial';
-    const authorEmail = author?.email?.trim() || existing.salespersonEmail || '';
-    const authorPhone = author?.phone?.trim() || existing.salespersonPhone || '';
+    // Keep creator assignment immutable for existing quotations.
+    const authorName = existing.salespersonFullName || existing.responsibleSignatureName || data.responsibleSignatureName || author?.fullName?.trim() || author?.username || 'Responsable comercial';
+    const authorJobTitle = existing.salespersonJobTitle || author?.jobTitle?.trim() || 'Asesor comercial';
+    const authorEmail = existing.salespersonEmail || author?.email?.trim() || '';
+    const authorPhone = existing.salespersonPhone || author?.phone?.trim() || '';
 
     const quotation = await this.quotationRepo.update(
       id,

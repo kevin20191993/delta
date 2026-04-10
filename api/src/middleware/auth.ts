@@ -8,6 +8,7 @@ export interface AuthenticatedRequest extends Request {
     email: string;
     phone?: string;
     role: string;
+    canEditAllQuotations: boolean;
     fullName?: string;
     jobTitle?: string;
   };
@@ -29,6 +30,7 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
       email?: string;
       phone?: string;
       role?: string;
+      canEditAllQuotations?: boolean;
       fullName?: string;
       jobTitle?: string;
     };
@@ -38,6 +40,7 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
       email: decoded.email || '',
       phone: decoded.phone || '',
       role: decoded.role || 'admin',
+      canEditAllQuotations: Boolean(decoded.canEditAllQuotations),
       fullName: decoded.fullName || '',
       jobTitle: decoded.jobTitle || ''
     };
